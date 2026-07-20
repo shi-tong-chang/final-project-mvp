@@ -540,3 +540,86 @@
     再推送 `origin/main`。
   - 在一般使用者 shell 將來源 repository 的本機 `main` 與遠端一次性
     對齊後，即可直接沿用標準 Git 工作流。
+
+## 2026-07-20 21:33 UTC（2026-07-21 05:33 Asia/Taipei）— Clone-to-run managed ComfyUI runtime 發布
+
+- **目的**：補齊任何新使用者 clone 後可由 Codex 執行「安裝環境」、
+  「啟動」、「狀態」、「停止」的固定框架，包含釘版 ComfyUI、GGUF、
+  兩套 Python、八顆模型、process ownership 與人類操作 README；角色與
+  場景 agent 維持 non-blocking pending。
+- **執行內容**：
+  - 新增 stdlib runtime controller 與五個 typed CLI command，固定
+    Gateway Python 3.12.10、ComfyUI Python 3.12.3、ComfyUI／GGUF commit、
+    torch 2.12.0+cu130、loopback ports 與完整 dependency hash lock。
+  - 預設採 managed ComfyUI code；模型 auto 只在單一候選 root 的八顆
+    exact bytes 與完整 SHA-256 全數通過後唯讀 external reuse，否則以
+    可續傳、hard-cap、隔離壞檔與 no-replace publish 的流程下載 managed
+    copies。
+  - Adopted code 嚴格驗證 commit、worktree、Python、packages、GGUF 與
+    source YAML；不修改外部 ComfyUI。ComfyUI 的 base、cwd、input、
+    output、temp、user、HOME、cache、logs 與 runtime custom nodes 均隔離
+    至 `.runtime`。
+  - Process state 加入 PID group、boot ID、start ticks、executable、
+    argv digest 與 Gateway–ComfyUI link 身分；未知 port owner、stale PID、
+    stop 次序、spawn rollback 與 state write 均 fail closed。
+  - 修正最終稽核發現的三條分支：Gateway health timeout 不再出現未初始化
+    變數、`--gateway-only` 永遠使用 disabled Comfy URL 並記錄
+    `comfy_enabled=false`、只剩 owned ComfyUI 運行時 status 回
+    `degraded` 而非 `stopped`。
+  - README 改為人類優先教學，加入 Windows WSL2／GPU／Codex 從零準備、
+    clone、四句操作、manual／PowerShell、managed／adopted／external
+    模型策略、只放大選定候選、logs、搬移復原與常見錯誤。
+  - 新增 clone-to-run 契約與驗收矩陣，清楚區分自動化證據與仍待 opt-in
+    的 47.27 GB 真實下載、CUDA 啟動及 RTX 5070 Ti GPU 重放。
+- **修改檔案**：
+  - `runtime/`、`scripts/fpmvp_runtime.py`、`scripts/runtime.ps1`
+  - `tests/test_runtime_*.py`
+  - `.gitignore`、`AGENTS.md`、`README.md`
+  - `docs/PROJECT_SPEC.md`、`docs/README_repro.md`
+  - `docs/tasks/CLONE_TO_RUN.md`、`docs/tasks/PROJECT_LOG.md`
+- **重要命令**：
+  - `.venv/bin/pytest`
+  - `.venv/bin/ruff format --check .`
+  - `.venv/bin/ruff check .`
+  - `.venv/bin/mypy backend runtime scripts tests`
+  - `node --check frontend/gateway/app.js`
+  - `uv lock --check`
+  - 五個 CLI 的 `--json --dry-run` 與零 state write 驗證
+  - JSON／JSONL parse、Markdown link、workflow SHA、staged
+    secret／symlink／大檔／個人路徑與逐位元來源比對
+  - `git push origin main`
+- **驗證結果**：
+  - pytest=`71 passed, 1 known Starlette TestClient/httpx2 deprecation
+    warning`；runtime 專項獨立複核=`36 passed`。
+  - Ruff format/check、mypy（41 files）、Node syntax、uv lock、Git
+    whitespace check 全部 PASS。
+  - 五個 JSON dry-run 全部可解析且 state dir 保持不存在；所有
+    repository-relative Markdown links 可解析。
+  - 8 個模型 lock 總大小=`47,266,047,406 bytes`；B1／wf10 workflow
+    SHA-256 分別維持
+    `ceefd5844cab5f10368f8999d6362551b43edd92743ac36000fb365c6ae5c1c8`
+    與
+    `a141d9988a617680c282a1c3df5fb93e3d49e4b311ce36b448e6fbc3dd81756e`。
+  - Feature commit
+    `44859912fc3915bb6e9657fd4f5058b5966636db` 已成功推送至指定
+    GitHub `main`，沒有 force push。
+- **發現事項**：
+  - 本機受控候選搜尋可找到既有 canonical external model root；八顆
+    檔案大小已符合，但本輪刻意沒有重新讀取 47.27 GB 計算完整 SHA，
+    正式採用時仍由 install 全量驗證。
+  - 既有 ComfyUI code 目前有 tracked 修改與 source
+    `extra_model_paths.yaml`，因此不符合 adopted 唯讀契約；建議使用
+    managed code 搭配 external models。
+  - 目前環境沒有 PowerShell executable，因此 wrapper 只完成 source
+    review，尚未在 Windows PowerShell 實際執行。
+  - 真實模型下載、RTX 5070 Ti CUDA／VRAM、ComfyUI 完整生命週期與
+    黃金圖重放仍未執行，文件及 UI 持續明示待實機驗證。
+- **下一步**：
+  - 在目標 WSL 主機輸入「安裝環境」，讓 install 完整 SHA 驗證並重用
+    external models；接著執行 `preflight --full`。
+  - 取得使用者 opt-in 後完成 B1 候選、確認未自動 4K、只選定一張送
+    wf10 的 GPU smoke，記錄耗時、VRAM、版本與結果。
+  - 待組員交付
+    `.codex/agents/character_generator.toml` 與
+    `.codex/agents/scene_generator.toml` 後，再依 strict agent 插槽契約
+    接入角色四視圖與單張場景生成。
