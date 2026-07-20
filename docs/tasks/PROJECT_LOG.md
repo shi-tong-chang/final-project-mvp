@@ -487,3 +487,56 @@
     確認只建立一個 wf10 工作並下載 3840×2160 成品。
   - 安裝腳本階段加入八模型名稱／SHA-256 preflight，以及 owned ComfyUI
     與既有共用 ComfyUI 的明確採用策略。
+
+## 2026-07-20 19:48 UTC（2026-07-21 03:48 Asia/Taipei）— GitHub 首次發布與持續版控
+
+- **目的**：將目前通過驗證的 MVP 推送至指定 GitHub repository，並把
+  後續交付一律提交與推送的要求寫入專案開發規範。
+- **執行內容**：
+  - 在 `AGENTS.md` 加入持續版本控制規則：使用 Conventional Commit、
+    交付前執行品質檢查、推送 `origin/main`、禁止 force push／任意改寫
+    歷史，且秘密、模型權重、虛擬環境與機器專屬絕對路徑不得提交。
+  - 新增 `.gitattributes`，只固定 runtime adapter 實際使用的 B1 與
+    wf10 為 LF；既有 manifests 與歷史 workflow 保留原始換行及
+    SHA-256 身分。
+  - 因本次 Codex sandbox 將來源 `.git` 掛載為唯讀，使用
+    `git clone --no-hardlinks` 建立暫時可寫 clone，保留原始 root commit，
+    再逐檔覆蓋並比對目前 70 個應發布檔案。
+  - 設定遠端為
+    `https://github.com/shi-tong-chang/final-project-mvp.git`，建立
+    `39e23b8 feat: integrate storyboard and selected 4k workflows` 並成功
+    首次推送至 `main`。
+- **修改檔案**：
+  - `AGENTS.md`
+  - `.gitattributes`
+  - `docs/tasks/PROJECT_LOG.md`
+  - 其餘功能與素材檔案詳見 commit `39e23b8`。
+- **重要命令**：
+  - 完整 Python／frontend／Git 品質工具鏈。
+  - 來源與暫時 clone 的逐檔 `cmp`。
+  - 全部 docs JSON／JSONL parse。
+  - staged secret／environment／model path scan。
+  - 對程式碼與一般文件執行 `git diff --cached --check`；釘定原始位元組的
+    CRLF 封存檔改以 JSON parse 與 SHA-256／逐位元比對驗證。
+  - `git push -u origin main`。
+- **驗證結果**：
+  - 完整測試=`25 passed, 1 known Starlette/httpx deprecation warning`；
+    workflow regression=`13 passed`。
+  - Ruff format/check、mypy（29 files）、Node syntax 與來源
+    `git diff --check` 全部 PASS。
+  - 14 份 JSON 與 1 份 JSONL 全部 parse PASS；70 個發布檔案與來源逐位元
+    相同。
+  - staging 未包含秘密 `.env`、虛擬環境、模型權重或
+    `Zone.Identifier`；公開設定範本 `.env.example` 刻意保留。
+  - GitHub 回報新建 `main -> main`，feature commit 已到達指定遠端。
+- **發現事項**：
+  - 本次 sandbox 無法直接更新來源 `.git/config`、HEAD 與 index；遠端
+    發布內容完整，但來源工作區的本機 Git metadata 需在可寫環境中與
+    `origin/main` 對齊。
+  - manifests 與部分歷史 workflow 使用 CRLF；直接套用 whitespace
+    自動修正會改變已記錄 SHA-256，因此不可機械式正規化。
+- **下一步**：
+  - 後續每個可交付功能都依 `AGENTS.md` 先驗證、建立小而清楚的 commit，
+    再推送 `origin/main`。
+  - 在一般使用者 shell 將來源 repository 的本機 `main` 與遠端一次性
+    對齊後，即可直接沿用標準 Git 工作流。
