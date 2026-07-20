@@ -7,8 +7,8 @@
 > 資料（圖片共約 14 MB）。
 >
 > 原始 manifest 內保留的 `C:\Users\...` 路徑只作 provenance，不是本
-> 專案執行路徑。安裝與執行一律由 `${COMFYUI_ROOT}`、repository 相對
-> 路徑或後端資產 ID 解析，不得寫死來源機個人路徑。
+> 專案執行路徑。安裝與執行一律由 `.runtime/config.json`、repository
+> 相對路徑或後端資產 ID 解析，不得寫死來源機個人路徑。
 
 ---
 
@@ -18,7 +18,8 @@
 |---|---|---|
 | ComfyUI 本體 | https://github.com/Comfy-Org/ComfyUI.git | `ab0d8a9203fbad76b0ccca723bbf9ba0c257ddfe`(v0.24.0-11-gab0d8a92) |
 | ComfyUI-GGUF（四個主 workflow 唯一必裝的 custom node，提供 `UnetLoaderGGUF`） | https://github.com/city96/ComfyUI-GGUF | `cf0573351ac260d629d460d97f09b09ac17d3726` |
-| Python | — | 3.12.3(venv) |
+| Gateway Python | — | 3.12.10（獨立 venv） |
+| ComfyUI Python | — | 3.12.3（獨立 venv） |
 | PyTorch | — | 2.12.0+cu130(CUDA 13.0) |
 
 依賴說明：`wf10`（4K 放大）全部是上述 ComfyUI 的核心節點；
@@ -31,20 +32,35 @@ custom-node 套件與這四個主 workflow 無關，不必安裝。
 repository，目前仍缺來源 repository／commit 與模型 pin；未補齊前不能
 把去背流程列為可重現主流程。
 
-以上是 source-level pin，尚不是完整 bit-for-bit 環境鎖。ComfyUI 與
-GGUF 的 Python transitive dependencies、PyTorch wheel 來源、配套
-`torchvision`／`torchaudio`、GPU driver 與啟動參數仍需另行鎖定。
+目前 [`runtime-lock.json`](../runtime/runtime-lock.json) 已另外固定
+bootstrap uv 的 release asset／SHA-256、Gateway 與 ComfyUI Python、
+PyTorch wheel index、`torchvision`／`torchaudio` 版本與 loopback port；
+[`comfy-requirements.lock.txt`](../runtime/comfy-requirements.lock.txt) 以
+hash 鎖住 ComfyUI／GGUF 的 Python transitive dependencies。這仍不是跨機
+bit-for-bit 保證：Windows NVIDIA driver、WSL kernel、GPU 與底層 CUDA
+執行差異不由 repository pin。
+
+Clone 後的 canonical controller 是 `scripts/fpmvp_runtime.py`。預設建立
+managed ComfyUI code；只有八顆 SHA 全數符合時才唯讀採用 external
+models。使用者既有 ComfyUI code 不會自動被 adopted，必須明確使用
+`--comfy-mode adopted --comfyui-root <path>`，且所有 code／Python pin
+通過、source `extra_model_paths.yaml` 不存在。只想重用既有模型時，
+建議保留 managed code，另以 `--models-mode external --model-root <path>`
+指定單一 canonical model root。完整契約見
+[`CLONE_TO_RUN.md`](./tasks/CLONE_TO_RUN.md)。
 
 ## 2. 模型清單(SHA-256 為身分依據)
 
-安裝位置是 ComfyUI `models/` 下的子資料夾。revision 當年未留紀錄，
-一律以 SHA-256 驗證下載檔；`unet/` 與 `clip/` 是此 ComfyUI commit
-仍支援的 legacy 路徑。來源／授權是已知最佳判斷，正式商用前仍須以實際
-下載頁確認。
+安裝位置是 model root 下的子資料夾；model root 可以是完整 SHA 驗證後
+唯讀採用的 external root，或 `.runtime/models/`。來源機當年未保存
+revision，後續已用既有 SHA-256 反查並固定目前可精確對應的下載
+revision；SHA-256 仍是檔案身分的最終 authority。`unet/` 與 `clip/` 是
+此 ComfyUI commit 仍支援的 legacy 路徑。來源／授權是已知最佳判斷，正式
+商用前仍須以實際下載頁確認。
 
 | 檔名 | 位置 | 大小(MB) | SHA-256 | 來源(已知最佳) | 授權 |
 |---|---|---|---|---|---|
-| qwen-image-edit-2511-Q6_K.gguf | unet/ | 16072 | FDC28E5B8F7D9CFE0399FD1700C375F25F000FC4159BBDB0D4A809AE898EB759 | HuggingFace 社群 GGUF 量化(QuantStack / city96 系,基於 Qwen/Qwen-Image-Edit-2511) | Apache-2.0 |
+| qwen-image-edit-2511-Q6_K.gguf | unet/ | 16072 | FDC28E5B8F7D9CFE0399FD1700C375F25F000FC4159BBDB0D4A809AE898EB759 | unsloth/Qwen-Image-Edit-2511-GGUF（exact blob revision 已釘定） | Apache-2.0 |
 | qwen_2.5_vl_7b_fp8_scaled.safetensors | clip/ | 8950 | CB5636D852A0EA6A9075AB1BEF496C0DB7AEF13C02350571E388AEA959C5C0B4 | Comfy-Org/Qwen-Image_ComfyUI(split_files/text_encoders) | Apache-2.0 |
 | qwen_image_vae.safetensors | vae/ | 242 | A70580F0213E67967EE9C95F05BB400E8FB08307E017A924BF3441223E023D1F | Comfy-Org/Qwen-Image_ComfyUI(split_files/vae) | Apache-2.0 |
 | z_image_turbo_bf16.safetensors | diffusion_models/ | 11740 | 2407613050B809FFDFF18A4AC99AF83EA6B95443ECEBDF80E064A79C825574A6 | Comfy-Org Z-Image 重打包(Tongyi-MAI/Z-Image-Turbo) | Apache-2.0 |
@@ -53,12 +69,21 @@ GGUF 的 Python transitive dependencies、PyTorch wheel 來源、配套
 | RealESRGAN_x2plus.pth | upscale_models/ | 64 | 49FAFD45F8FD7AA8D31AB2A22D14D91B536C34494A5CFE31EB5D89C2FA266ABB | github.com/xinntao/Real-ESRGAN releases | BSD-3-Clause |
 | RealESRGAN_x4plus_anime_6B.pth | upscale_models/ | 17 | F872D837D3C90ED2E05227BED711AF5671A6FD1C9F7D7E91C911A61F155E99DA | github.com/xinntao/Real-ESRGAN releases | BSD-3-Clause |
 
-合成線用前 3 顆;4K 放大線用後 5 顆。
+合成線用前 3 顆；4K 放大線用後 5 顆，合計 47,266,047,406 bytes，約
+47.27 GB。
 
-這張表足以在取得檔案後驗證身分，但尚不足以自動安裝：目前沒有每個檔案的
-精確下載 URL／revision，第一顆 GGUF 的來源也只縮小到候選發布者。後續
-應把這些欄位整理成 machine-readable model lock。選用去背模型
-`BiRefNet-HR-matting` 尚未列入，因其 custom node 與模型來源仍未釘定。
+八顆模型的精確 HTTPS URL、Hugging Face commit／GitHub release tag、
+exact bytes、SHA-256、安裝子目錄、授權與 `required_by` 已收錄在
+[`models.lock.json`](../runtime/models.lock.json)，可供 installer 續傳
+下載並在 atomic publish 前驗證。預設安裝會先對 external model root
+完整計算八顆 SHA；全數符合才唯讀採用，否則下載 managed copies，不會
+修改外部 ComfyUI。
+
+`Comfy-Org/z_image_turbo` distribution card 本身沒有 license metadata；
+表內 Apache-2.0 依各上游 Z-Image-Turbo、Qwen3-4B 與 exact-byte
+FLUX.1-schnell VAE 判定，商用前仍應再次核對下載頁。選用去背模型
+`BiRefNet-HR-matting` 尚未列入，因其 custom node 與模型來源仍未釘定，
+也不屬於目前 clone-to-run 主流程。
 
 ## 3. manifests／產品接線
 

@@ -35,7 +35,45 @@
 - 雙角色 B1／人工選片／B2 的兩階段合成。
 - 任意畫幅的 4K 輸出、任意 workflow 上傳或 node 級控制。
 
-## 4. Catalog 契約
+## 4. Clone-to-run 與 runtime 契約
+
+- 第一個支援目標是 Windows 11、WSL2 Ubuntu 24.04 x86_64 與 NVIDIA
+  RTX 5070 Ti 16 GB；安裝需要網路，建議至少 65 GiB 可用空間。
+- `安裝環境`、`啟動`、`狀態`、`停止` 只由 repository 外層的 Codex
+  對話映射到 `scripts/fpmvp_runtime.py` 固定 CLI。Browser HTTP 不得接成
+  shell、runtime CLI 或 Codex turn。
+- Gateway 固定使用 Python 3.12.10；ComfyUI 固定使用獨立 Python
+  3.12.3／torch 2.12.0+cu130，兩者不共用 site-packages。
+- 預設 `--comfy-mode auto` 解析為 Git-ignored `.runtime/` 內的 managed
+  ComfyUI code；不自動採用或修改使用者既有 ComfyUI。
+- 預設 `--models-mode auto` 只在八顆模型完整 SHA-256 全數符合
+  [`runtime/models.lock.json`](../runtime/models.lock.json) 時唯讀採用
+  external root，否則續傳下載 managed copies。總模型大小約 47.27 GB。
+- 既有 ComfyUI 只有在使用者明確選擇 adopted，且 core／GGUF commit、
+  core 受 Git 追蹤檔無修改、GGUF worktree 嚴格通過、Python 與 package
+  pins 符合、source `extra_model_paths.yaml` 不存在時才可採用；其他
+  untracked custom nodes 可存在但不載入。Adopted 資產不得被 installer
+  修改；ComfyUI base、工作資料、HOME、cache 與 logs 全導向 `.runtime/`。
+- `preflight` 預設 quick，核對模型 exact bytes 與 install SHA receipt；
+  `preflight --full` 才重算八顆 SHA-256。
+- 所有 listener 固定 loopback，runtime 只停止 PID identity 可證明由本
+  repository 擁有的 process。
+
+完整命令、ownership 與失敗復原見
+[`CLONE_TO_RUN.md`](./tasks/CLONE_TO_RUN.md)。目前尚未完成目標 RTX
+5070 Ti 的端到端 GPU 重放，不得把 lock／單元測試或來源機黃金圖描述成
+新機實測成功。
+
+### 4.1 Agent 插槽
+
+角色與場景 agent 預留於
+`.codex/agents/character_generator.toml`、
+`.codex/agents/scene_generator.toml`。兩者到位前維持
+`pending`、`blocks_start=false`；不阻擋現有首頁、catalog、使用者自行
+上傳素材的單角色分鏡，以及選定候選後的 4K。每份 TOML 接線時至少嚴格
+驗證非空白 `name`、`description`、`developer_instructions`。
+
+## 5. Catalog 契約
 
 Schema version：`storyboard-studio.catalog.v2`。
 
@@ -53,13 +91,15 @@ Schema version：`storyboard-studio.catalog.v2`。
 `preview_url` 為選填；存在時必須是安全同源路徑。正式圖片到位前，
 `preview_kind` 必須對應前端 allowlist 中的 code-native preview class。
 
-## 5. 安全
+## 6. 安全
 
 - Server 只綁 `127.0.0.1`。
 - CSP：資源與連線同源，禁止被 iframe 嵌入。
 - 不在前端或日誌暴露 Codex auth、API key 或環境內容。
 - 保留的 Codex adapter 固定 read-only、never approve、repo-scoped cwd。
 - Browser 不直接連 child process。
+- Browser 不得透過 HTTP、WebSocket 或自然語言欄位觸發 runtime CLI、
+  shell 或 Codex thread／turn。
 - Browser 不直接連 ComfyUI，也不能提供 workflow、node ID、模型、seed、
   ComfyUI 路徑或 server filename。
 - FastAPI 只連 loopback ComfyUI；任務使用 server-generated opaque ID、
@@ -72,8 +112,10 @@ Schema version：`storyboard-studio.catalog.v2`。
   且仍等於 Browser 回傳的 server-issued 預期候選 ID。
 - 固定 workflow 以 SHA-256 fail closed，Git checkout 強制保留 LF，
   避免 graph 漂移或 Windows CRLF 改變固定資產。
+- Managed ComfyUI、models、logs 與生成工作資料只寫入 Git-ignored
+  `.runtime/`；adopted ComfyUI 保持唯讀。
 
-## 6. 驗收
+## 7. 驗收
 
 - Live catalog 精確提供二十個唯一角色風格及非空白提示詞片段。
 - Browser 無對話 panel／chat button，操作不建立 thread 或 turn。
@@ -86,4 +128,9 @@ Schema version：`storyboard-studio.catalog.v2`。
   工作。短暫輪詢失敗不得重複排程，應重試並與既有 run 對帳。
 - ComfyUI 不可用或任務失敗時顯示安全錯誤，不洩漏本機路徑或 raw payload。
 - 成功放大後提供 3840×2160 的同源預覽與下載。
+- 預設 install 使用 managed ComfyUI code；完全不相符的既有 ComfyUI
+  不被探測、修改或自動 adopted。
+- External model root 只有在八顆完整 SHA-256 全部符合時採用；中斷下載
+  可由 managed `.part` 安全續傳，驗證前不發布。
+- 角色／場景 agent 缺席時維持 pending，但既有分鏡與選定後 4K 可用。
 - Unit、browser、Ruff 與 mypy 全部通過。

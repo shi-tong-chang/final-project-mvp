@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "tools": {
+    "uv": {
+      "version": "0.11.29",
+      "url": "https://github.com/astral-sh/uv/releases/download/0.11.29/uv-x86_64-unknown-linux-gnu.tar.gz",
+      "sha256": "04f8b82f5d47f0512dcd32c67a4a6f16a0ea27c81537c338fd0ad6b23cebe829"
+    }
+  },
+  "gateway": {
+    "python": "3.12.10",
+    "host": "127.0.0.1",
+    "port": 8010
+  },
+  "comfyui": {
+    "repository": "https://github.com/Comfy-Org/ComfyUI.git",
+    "commit": "ab0d8a9203fbad76b0ccca723bbf9ba0c257ddfe",
+    "python": "3.12.3",
+    "host": "127.0.0.1",
+    "port": 8188,
+    "torch": "2.12.0+cu130",
+    "torchvision": "0.27.0+cu130",
+    "torchaudio": "2.11.0+cu130",
+    "pytorch_index_url": "https://download.pytorch.org/whl/cu130"
+  },
+  "custom_nodes": [
+    {
+      "name": "ComfyUI-GGUF",
+      "repository": "https://github.com/city96/ComfyUI-GGUF.git",
+      "commit": "cf0573351ac260d629d460d97f09b09ac17d3726"
+    }
+  ],
+  "agents": [
+    {
+      "name": "character",
+      "status": "pending",
+      "blocks_start": false
+    },
+    {
+      "name": "scene",
+      "status": "pending",
+      "blocks_start": false
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+# 依使用者既有 ComfyUI 環境提供並釘定；新 clone 仍需目標 GPU smoke。
+torch==2.12.0+cu130
+torchvision==0.27.0+cu130
+torchaudio==2.11.0+cu130

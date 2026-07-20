@@ -1,0 +1,141 @@
+{
+  "schema_version": 1,
+  "models": [
+    {
+      "filename": "qwen-image-edit-2511-Q6_K.gguf",
+      "subdir": "unet",
+      "bytes": 16852417120,
+      "sha256": "fdc28e5b8f7d9cfe0399fd1700c375f25f000fc4159bbdb0d4a809ae898eb759",
+      "url": "https://huggingface.co/unsloth/Qwen-Image-Edit-2511-GGUF/resolve/0d33d9692b4b26212297240d87b0d4719aa4fd06/qwen-image-edit-2511-Q6_K.gguf?download=true",
+      "source": {
+        "provider": "huggingface",
+        "repository": "unsloth/Qwen-Image-Edit-2511-GGUF",
+        "revision": "0d33d9692b4b26212297240d87b0d4719aa4fd06",
+        "path": "qwen-image-edit-2511-Q6_K.gguf"
+      },
+      "license": "Apache-2.0",
+      "required_by": [
+        "docs/workflows/wf_dual_B1.json"
+      ]
+    },
+    {
+      "filename": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+      "subdir": "clip",
+      "bytes": 9384670680,
+      "sha256": "cb5636d852a0ea6a9075ab1bef496c0db7aef13c02350571e388aea959c5c0b4",
+      "url": "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/46839d338df81ce625d5fae27d7e370314c0fbc9/split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors?download=true",
+      "source": {
+        "provider": "huggingface",
+        "repository": "Comfy-Org/Qwen-Image_ComfyUI",
+        "revision": "46839d338df81ce625d5fae27d7e370314c0fbc9",
+        "path": "split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors"
+      },
+      "license": "Apache-2.0",
+      "required_by": [
+        "docs/workflows/wf_dual_B1.json"
+      ]
+    },
+    {
+      "filename": "qwen_image_vae.safetensors",
+      "subdir": "vae",
+      "bytes": 253806246,
+      "sha256": "a70580f0213e67967ee9c95f05bb400e8fb08307e017a924bf3441223e023d1f",
+      "url": "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/46839d338df81ce625d5fae27d7e370314c0fbc9/split_files/vae/qwen_image_vae.safetensors?download=true",
+      "source": {
+        "provider": "huggingface",
+        "repository": "Comfy-Org/Qwen-Image_ComfyUI",
+        "revision": "46839d338df81ce625d5fae27d7e370314c0fbc9",
+        "path": "split_files/vae/qwen_image_vae.safetensors"
+      },
+      "license": "Apache-2.0",
+      "required_by": [
+        "docs/workflows/wf_dual_B1.json"
+      ]
+    },
+    {
+      "filename": "z_image_turbo_bf16.safetensors",
+      "subdir": "diffusion_models",
+      "bytes": 12309866400,
+      "sha256": "2407613050b809ffdff18a4ac99af83ea6b95443ecebdf80e064a79c825574a6",
+      "url": "https://huggingface.co/Comfy-Org/z_image_turbo/resolve/d24c4cf2a0cd98a42f23467e27e3d76ee9438b8e/split_files/diffusion_models/z_image_turbo_bf16.safetensors?download=true",
+      "source": {
+        "provider": "huggingface",
+        "repository": "Comfy-Org/z_image_turbo",
+        "revision": "d24c4cf2a0cd98a42f23467e27e3d76ee9438b8e",
+        "path": "split_files/diffusion_models/z_image_turbo_bf16.safetensors"
+      },
+      "license": "Apache-2.0",
+      "required_by": [
+        "docs/workflows/wf10_upscale_opt2.json"
+      ]
+    },
+    {
+      "filename": "qwen_3_4b.safetensors",
+      "subdir": "clip",
+      "bytes": 8044982048,
+      "sha256": "6c671498573ac2f7a5501502ccce8d2b08ea6ca2f661c458e708f36b36edfc5a",
+      "url": "https://huggingface.co/Comfy-Org/z_image_turbo/resolve/d24c4cf2a0cd98a42f23467e27e3d76ee9438b8e/split_files/text_encoders/qwen_3_4b.safetensors?download=true",
+      "source": {
+        "provider": "huggingface",
+        "repository": "Comfy-Org/z_image_turbo",
+        "revision": "d24c4cf2a0cd98a42f23467e27e3d76ee9438b8e",
+        "path": "split_files/text_encoders/qwen_3_4b.safetensors"
+      },
+      "license": "Apache-2.0",
+      "required_by": [
+        "docs/workflows/wf10_upscale_opt2.json"
+      ]
+    },
+    {
+      "filename": "ae.safetensors",
+      "subdir": "vae",
+      "bytes": 335304388,
+      "sha256": "afc8e28272cd15db3919bacdb6918ce9c1ed22e96cb12c4d5ed0fba823529e38",
+      "url": "https://huggingface.co/Comfy-Org/z_image_turbo/resolve/d24c4cf2a0cd98a42f23467e27e3d76ee9438b8e/split_files/vae/ae.safetensors?download=true",
+      "source": {
+        "provider": "huggingface",
+        "repository": "Comfy-Org/z_image_turbo",
+        "revision": "d24c4cf2a0cd98a42f23467e27e3d76ee9438b8e",
+        "path": "split_files/vae/ae.safetensors"
+      },
+      "license": "Apache-2.0",
+      "required_by": [
+        "docs/workflows/wf10_upscale_opt2.json"
+      ]
+    },
+    {
+      "filename": "RealESRGAN_x2plus.pth",
+      "subdir": "upscale_models",
+      "bytes": 67061725,
+      "sha256": "49fafd45f8fd7aa8d31ab2a22d14d91b536c34494a5cfe31eb5d89c2fa266abb",
+      "url": "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.1/RealESRGAN_x2plus.pth",
+      "source": {
+        "provider": "github",
+        "repository": "xinntao/Real-ESRGAN",
+        "revision": "v0.2.1",
+        "path": "RealESRGAN_x2plus.pth"
+      },
+      "license": "BSD-3-Clause",
+      "required_by": [
+        "docs/workflows/wf10_upscale_opt2.json"
+      ]
+    },
+    {
+      "filename": "RealESRGAN_x4plus_anime_6B.pth",
+      "subdir": "upscale_models",
+      "bytes": 17938799,
+      "sha256": "f872d837d3c90ed2e05227bed711af5671a6fd1c9f7d7e91c911a61f155e99da",
+      "url": "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth",
+      "source": {
+        "provider": "github",
+        "repository": "xinntao/Real-ESRGAN",
+        "revision": "v0.2.2.4",
+        "path": "RealESRGAN_x4plus_anime_6B.pth"
+      },
+      "license": "BSD-3-Clause",
+      "required_by": [
+        "docs/workflows/wf10_upscale_opt2.json"
+      ]
+    }
+  ]
+}
