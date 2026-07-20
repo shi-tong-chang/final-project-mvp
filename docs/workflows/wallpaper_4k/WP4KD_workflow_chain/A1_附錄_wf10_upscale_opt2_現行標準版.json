@@ -1,0 +1,19 @@
+{
+ "1":  {"class_type": "UNETLoader", "inputs": {"unet_name": "z_image_turbo_bf16.safetensors", "weight_dtype": "fp8_e4m3fn_fast"}},
+ "2":  {"class_type": "ModelSamplingAuraFlow", "inputs": {"shift": 3.0, "model": ["1", 0]}},
+ "3":  {"class_type": "CLIPLoader", "inputs": {"clip_name": "qwen_3_4b.safetensors", "type": "lumina2", "device": "default"}},
+ "4":  {"class_type": "CLIPTextEncodeLumina2", "inputs": {"system_prompt": "superior", "user_prompt": "【當前畫面內容具體描述:主體、姿勢、服裝、飾品狀態、場景、光線】,畫面柔順如絲,筆觸柔和細膩,沒有戴耳環。", "clip": ["3", 0]}},
+ "5":  {"class_type": "ConditioningZeroOut", "inputs": {"conditioning": ["4", 0]}},
+ "9":  {"class_type": "VAELoader", "inputs": {"vae_name": "ae.safetensors"}},
+ "10": {"class_type": "LoadImage", "inputs": {"image": "upscale4k_src.png"}},
+ "30": {"class_type": "UpscaleModelLoader", "inputs": {"model_name": "RealESRGAN_x2plus.pth"}},
+ "31": {"class_type": "ImageUpscaleWithModel", "inputs": {"upscale_model": ["30", 0], "image": ["10", 0]}},
+ "20": {"class_type": "ImageScale", "inputs": {"upscale_method": "lanczos", "width": 2672, "height": 1504, "crop": "center", "image": ["31", 0]}},
+ "21": {"class_type": "VAEEncodeTiled", "inputs": {"tile_size": 512, "overlap": 64, "temporal_size": 64, "temporal_overlap": 8, "pixels": ["20", 0], "vae": ["9", 0]}},
+ "22": {"class_type": "KSampler", "inputs": {"seed": 676767676701, "steps": 8, "cfg": 1.0, "sampler_name": "res_multistep", "scheduler": "simple", "denoise": 0.23, "model": ["2", 0], "positive": ["4", 0], "negative": ["5", 0], "latent_image": ["21", 0]}},
+ "23": {"class_type": "VAEDecodeTiled", "inputs": {"tile_size": 512, "overlap": 64, "temporal_size": 64, "temporal_overlap": 8, "samples": ["22", 0], "vae": ["9", 0]}},
+ "11": {"class_type": "UpscaleModelLoader", "inputs": {"model_name": "RealESRGAN_x4plus_anime_6B.pth"}},
+ "24": {"class_type": "ImageUpscaleWithModel", "inputs": {"upscale_model": ["11", 0], "image": ["23", 0]}},
+ "25": {"class_type": "ImageScale", "inputs": {"upscale_method": "lanczos", "width": 3840, "height": 2160, "crop": "center", "image": ["24", 0]}},
+ "26": {"class_type": "SaveImage", "inputs": {"filename_prefix": "upscale4k_opt2", "images": ["25", 0]}}
+}

@@ -1,0 +1,53 @@
+{
+ "1": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "matte_input_215098382934622.png"
+  }
+ },
+ "2": {
+  "class_type": "BiRefNetRMBG",
+  "inputs": {
+   "image": [
+    "1",
+    0
+   ],
+   "model": "BiRefNet-HR-matting",
+   "mask_blur": 0,
+   "mask_offset": 0,
+   "invert_output": false,
+   "refine_foreground": true,
+   "background": "Alpha",
+   "background_color": "#222222"
+  }
+ },
+ "3": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "2",
+    0
+   ],
+   "filename_prefix": "i2i_mix_matte_fg"
+  }
+ },
+ "4": {
+  "class_type": "MaskToImage",
+  "inputs": {
+   "mask": [
+    "2",
+    1
+   ]
+  }
+ },
+ "5": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "4",
+    0
+   ],
+   "filename_prefix": "i2i_mix_matte_mask"
+  }
+ }
+}

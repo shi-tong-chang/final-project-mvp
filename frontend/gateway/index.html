@@ -354,130 +354,251 @@
           <div class="panel-heading">
             <div>
               <p class="section-number">03 / STORYBOARD</p>
-              <h2>編排分鏡節奏</h2>
+              <h2>合成人物與場景分鏡</h2>
               <p>
-                把事件寫成可拍攝的瞬間。分鏡櫥窗先展示版面與鏡頭節奏，後續再換入角色及場景資產。
+                上傳一張場景圖與角色的單一正面參考，先產生最多三張工作解析度候選；選定後才會放大該張分鏡。
               </p>
             </div>
-            <span class="phase-tag">流程預覽</span>
+            <span class="phase-tag">本機工作流</span>
           </div>
 
           <div class="generator-layout">
             <div class="editor-stack">
-              <section class="paper-card brief-card" aria-labelledby="storyboard-brief-title">
-                <div class="card-title-row">
-                  <div>
-                    <p class="card-index">分鏡內容</p>
-                    <h3 id="storyboard-brief-title">這一幕發生什麼事？</h3>
+              <form id="storyboard-compose-form" class="editor-stack">
+                <section
+                  class="paper-card brief-card"
+                  aria-labelledby="storyboard-brief-title"
+                >
+                  <div class="card-title-row">
+                    <div>
+                      <p class="card-index">合成素材</p>
+                      <h3 id="storyboard-brief-title">誰出現在哪個場景？</h3>
+                    </div>
+                    <span id="storyboard-prompt-count" class="field-count"
+                      >0 / 4000</span
+                    >
                   </div>
-                  <span id="storyboard-prompt-count" class="field-count">0 / 1600</span>
-                </div>
-                <label for="storyboard-prompt">段落或鏡頭描述</label>
-                <textarea
-                  id="storyboard-prompt"
-                  name="prompt"
-                  rows="8"
-                  maxlength="1600"
-                  required
-                  data-count-target="storyboard-prompt-count"
-                  placeholder="例如：主角推開工坊的門，看見停擺多年的大鐘突然開始倒轉。他先愣住，接著快步走向工作桌，發現那枚壞掉的懷錶正發出微光。"
-                ></textarea>
-                <div class="three-field-grid">
-                  <label>
-                    畫面比例
-                    <select id="storyboard-ratio" name="ratio">
-                      <option value="16:9">16:9 橫幅</option>
-                      <option value="2.39:1">2.39:1 寬銀幕</option>
-                      <option value="4:3">4:3 經典畫幅</option>
-                      <option value="9:16">9:16 直幅</option>
-                    </select>
-                  </label>
-                  <label>
-                    建議格數
-                    <select id="storyboard-frames" name="frames">
-                      <option value="3">3 格／精簡節奏</option>
-                      <option value="5">5 格／完整動作</option>
-                      <option value="7">7 格／細緻拆解</option>
-                    </select>
-                  </label>
-                  <label>
-                    主要節奏
-                    <select id="storyboard-pace" name="pace">
-                      <option value="measured">沉著推進</option>
-                      <option value="suspense">懸疑停頓</option>
-                      <option value="kinetic">快速動態</option>
-                      <option value="intimate">細膩情緒</option>
-                    </select>
-                  </label>
-                </div>
-              </section>
 
-              <fieldset class="paper-card shot-picker">
-                <legend>鏡頭組合</legend>
-                <p class="field-help">先選閱讀節奏；後續接上規劃流程時可再依事件內容調整鏡位。</p>
-                <div class="shot-options">
-                  <label>
-                    <input
-                      type="radio"
-                      name="shot-pattern"
-                      value="establish-react-detail"
-                      data-pattern-name="建立・反應・細節"
-                      checked
-                    />
-                    <span class="shot-diagram" aria-hidden="true">
-                      <i class="wide"></i><i class="medium"></i><i class="close"></i>
-                    </span>
-                    <span><strong>建立・反應・細節</strong><small>清楚交代事件</small></span>
+                  <div class="workflow-file-grid">
+                    <label class="workflow-file-field" for="storyboard-scene-file">
+                      <span>場景圖</span>
+                      <input
+                        id="storyboard-scene-file"
+                        name="scene_image"
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        required
+                      />
+                      <small>第一張參考：保留構圖、視角與場景光線。</small>
+                    </label>
+                    <label
+                      class="workflow-file-field"
+                      for="storyboard-character-file"
+                    >
+                      <span>角色正面參考</span>
+                      <input
+                        id="storyboard-character-file"
+                        name="character_image"
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        required
+                      />
+                      <small>請從四視圖裁出單一正面圖，不要上傳整張四視圖。</small>
+                    </label>
+                  </div>
+
+                  <label for="storyboard-prompt">合成描述</label>
+                  <textarea
+                    id="storyboard-prompt"
+                    name="prompt"
+                    rows="9"
+                    maxlength="4000"
+                    required
+                    data-count-target="storyboard-prompt-count"
+                    placeholder="例如：把第二張圖中的角色放進第一張場景的左側；完整保留角色的五官、髮型、服裝與配件，也保持場景構圖、光源與視角不變。角色面向畫面右側，光影方向與場景一致，腳下有自然接觸陰影。"
+                  ></textarea>
+
+                  <label class="candidate-count-field" for="storyboard-candidate-count">
+                    候選數量
+                    <select
+                      id="storyboard-candidate-count"
+                      name="candidate_count"
+                    >
+                      <option value="1">1 張／快速確認</option>
+                      <option value="2">2 張／簡短比稿</option>
+                      <option value="3" selected>3 張／建議候選池</option>
+                    </select>
                   </label>
-                  <label>
-                    <input
-                      type="radio"
-                      name="shot-pattern"
-                      value="detail-reveal"
-                      data-pattern-name="細節・揭露"
-                    />
-                    <span class="shot-diagram is-reversed" aria-hidden="true">
-                      <i class="close"></i><i class="medium"></i><i class="wide"></i>
-                    </span>
-                    <span><strong>細節・揭露</strong><small>逐步擴大資訊</small></span>
-                  </label>
+                </section>
+
+                <div class="action-bar">
+                  <div>
+                    <strong>先產生工作解析度候選</strong>
+                    <span>候選不會自動放大；必須由你明確選定一張。</span>
+                    <p
+                      id="storyboard-generation-status"
+                      class="workflow-status"
+                      role="status"
+                      aria-live="polite"
+                    ></p>
+                    <button
+                      id="storyboard-generation-retry-button"
+                      class="workflow-retry-button"
+                      type="button"
+                      hidden
+                    >
+                      重新查詢候選進度
+                    </button>
+                  </div>
+                  <button
+                    id="generate-storyboard-button"
+                    class="primary-button"
+                    type="submit"
+                  >
+                    產生候選分鏡
+                  </button>
+                </div>
+              </form>
+
+              <fieldset
+                id="storyboard-candidate-section"
+                class="paper-card candidate-picker"
+                hidden
+              >
+                <legend>選擇定稿候選</legend>
+                <p class="field-help">
+                  逐張檢查角色特徵、手部、場景結構與接觸陰影，再確認唯一一張要放大的分鏡。
+                </p>
+                <div
+                  id="storyboard-candidate-grid"
+                  class="candidate-grid"
+                  aria-live="polite"
+                ></div>
+                <div class="candidate-selection-bar">
+                  <p
+                    id="storyboard-selection-status"
+                    class="workflow-status"
+                    role="status"
+                    aria-live="polite"
+                  ></p>
+                  <button
+                    id="confirm-storyboard-button"
+                    class="secondary-button"
+                    type="button"
+                    disabled
+                  >
+                    確定這張分鏡
+                  </button>
                 </div>
               </fieldset>
 
-              <div class="action-bar is-placeholder">
-                <div>
-                  <strong>分鏡功能預留</strong>
-                  <span>目前只展示鏡頭節奏與版面，不會啟動 GPU 或建立生成任務。</span>
+              <form
+                id="storyboard-upscale-form"
+                class="paper-card upscale-card"
+                hidden
+              >
+                <div class="card-title-row">
+                  <div>
+                    <p class="card-index">4K 定稿</p>
+                    <h3>只放大已確認的分鏡</h3>
+                  </div>
+                  <span id="upscale-refine-prompt-count" class="field-count"
+                    >0 / 4000</span
+                  >
                 </div>
-              </div>
+                <label for="upscale-refine-prompt">4K 細節鎖定描述</label>
+                <textarea
+                  id="upscale-refine-prompt"
+                  name="refine_prompt"
+                  rows="8"
+                  maxlength="4000"
+                  required
+                  data-count-target="upscale-refine-prompt-count"
+                  placeholder="具體描述目前畫面的角色外觀、姿勢、服裝、配件、場景與光線，讓精修時保留已定稿內容。"
+                ></textarea>
+                <p class="upscale-note">
+                  最終輸出固定為 3840 × 2160。系統只會處理上方已確認的單一候選，絕不自動放大其他候選。
+                  非 16:9 來源會置中裁切，建議場景使用 16:9。
+                </p>
+                <div class="action-bar">
+                  <div>
+                    <strong>執行 4K 精修放大</strong>
+                    <span>送出後請保持本機服務運作，完成前不要重複建立任務。</span>
+                    <p
+                      id="storyboard-upscale-status"
+                      class="workflow-status"
+                      role="status"
+                      aria-live="polite"
+                    ></p>
+                    <button
+                      id="storyboard-upscale-retry-button"
+                      class="workflow-retry-button"
+                      type="button"
+                      hidden
+                    >
+                      重新查詢 4K 進度
+                    </button>
+                  </div>
+                  <button
+                    id="upscale-storyboard-button"
+                    class="primary-button"
+                    type="submit"
+                    disabled
+                  >
+                    放大已選分鏡至 4K
+                  </button>
+                </div>
+              </form>
             </div>
 
-            <aside class="showcase-card storyboard-showcase" aria-labelledby="selected-shot-pattern">
+            <aside
+              class="showcase-card storyboard-showcase"
+              aria-labelledby="storyboard-result-title"
+            >
               <div class="showcase-topline">
-                <span>SHOT BOARD</span>
-                <span class="asset-state">展示佔位</span>
+                <span>SHOT OUTPUT</span>
+                <span id="storyboard-asset-state" class="asset-state"
+                  >等待素材</span
+                >
               </div>
-              <div class="story-frames">
-                <span class="story-frame frame-wide">
-                  <i class="frame-window"></i><i class="frame-person"></i>
-                  <b>01</b>
-                </span>
-                <span class="story-frame frame-reaction">
-                  <i class="frame-face"></i><i class="frame-light"></i>
-                  <b>02</b>
-                </span>
-                <span class="story-frame frame-detail">
-                  <i class="frame-watch"></i><i class="frame-hand"></i>
-                  <b>03</b>
-                </span>
+              <div
+                id="storyboard-result-stage"
+                class="storyboard-result-stage"
+                aria-live="polite"
+              >
+                <p id="storyboard-result-empty">
+                  產生候選後，這裡會顯示目前選取的分鏡；完成 4K 後會原位更新為定稿。
+                </p>
+                <img
+                  id="storyboard-result-image"
+                  alt="目前選取的分鏡"
+                  hidden
+                />
               </div>
               <div class="showcase-caption">
-                <p>目前鏡頭組合</p>
-                <h3 id="selected-shot-pattern">建立・反應・細節</h3>
-                <span>角色 master、場景 plate 與獲選分鏡會在後續接線時填入。</span>
+                <p>目前結果</p>
+                <h3 id="storyboard-result-title">尚未產生候選</h3>
+                <span id="storyboard-result-description"
+                  >請先準備場景、單一角色正面參考與詳細合成描述。</span
+                >
               </div>
-              <div class="timeline-rule" aria-hidden="true">
-                <span></span><span></span><span></span>
+              <div id="storyboard-downloads" class="storyboard-downloads" hidden>
+                <a
+                  id="storyboard-download-link"
+                  class="result-link"
+                  href="/"
+                  download
+                  hidden
+                  >下載已選分鏡</a
+                >
+                <a
+                  id="upscale4k-download-link"
+                  class="result-link is-primary"
+                  href="/"
+                  download
+                  hidden
+                  >下載 4K 定稿</a
+                >
               </div>
             </aside>
           </div>

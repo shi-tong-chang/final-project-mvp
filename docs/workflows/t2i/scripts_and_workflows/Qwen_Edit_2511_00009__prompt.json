@@ -1,0 +1,360 @@
+{
+ "9": {
+  "inputs": {
+   "filename_prefix": "Qwen_Edit_2511",
+   "images": [
+    "170:158",
+    0
+   ]
+  },
+  "class_type": "SaveImage",
+  "_meta": {
+   "title": "儲存圖片"
+  }
+ },
+ "41": {
+  "inputs": {
+   "image": "a_detailed_dramatic_gothic_cathedral_interior_sce_1.png"
+  },
+  "class_type": "LoadImage",
+  "_meta": {
+   "title": "載入圖片"
+  },
+  "is_changed": [
+   "3710bfb2e83957f9349d01d1f4bba4334560f094e5836ac85f376140dedf5793"
+  ]
+ },
+ "170:146": {
+  "inputs": {
+   "vae_name": "qwen_image_vae.safetensors"
+  },
+  "class_type": "VAELoader",
+  "_meta": {
+   "title": "載入 VAE"
+  }
+ },
+ "170:147": {
+  "inputs": {
+   "reference_latents_method": "index_timestep_zero",
+   "conditioning": [
+    "170:149",
+    0
+   ]
+  },
+  "class_type": "FluxKontextMultiReferenceLatentMethod",
+  "_meta": {
+   "title": "FluxKontext 多重參考潛在方法"
+  }
+ },
+ "170:148": {
+  "inputs": {
+   "reference_latents_method": "index_timestep_zero",
+   "conditioning": [
+    "170:151",
+    0
+   ]
+  },
+  "class_type": "FluxKontextMultiReferenceLatentMethod",
+  "_meta": {
+   "title": "FluxKontext 多重參考潛在方法"
+  }
+ },
+ "170:149": {
+  "inputs": {
+   "prompt": "",
+   "clip": [
+    "170:162",
+    0
+   ],
+   "vae": [
+    "170:146",
+    0
+   ],
+   "image1": [
+    "170:160",
+    0
+   ]
+  },
+  "class_type": "TextEncodeQwenImageEditPlus",
+  "_meta": {
+   "title": "TextEncodeQwenImageEditPlus"
+  }
+ },
+ "170:151": {
+  "inputs": {
+   "prompt": "<sks> right side view eye-level shot medium shot",
+   "clip": [
+    "170:162",
+    0
+   ],
+   "vae": [
+    "170:146",
+    0
+   ],
+   "image1": [
+    "170:160",
+    0
+   ]
+  },
+  "class_type": "TextEncodeQwenImageEditPlus",
+  "_meta": {
+   "title": "TextEncodeQwenImageEditPlus (Positive)"
+  }
+ },
+ "170:152": {
+  "inputs": {
+   "strength": 1.0,
+   "pre_cfg": false,
+   "model": [
+    "170:145",
+    0
+   ]
+  },
+  "class_type": "CFGNorm",
+  "_meta": {
+   "title": "CFG 正規化"
+  }
+ },
+ "170:155": {
+  "inputs": {
+   "value": 1.0
+  },
+  "class_type": "PrimitiveFloat",
+  "_meta": {
+   "title": "CFG"
+  }
+ },
+ "170:156": {
+  "inputs": {
+   "pixels": [
+    "170:160",
+    0
+   ],
+   "vae": [
+    "170:146",
+    0
+   ]
+  },
+  "class_type": "VAEEncode",
+  "_meta": {
+   "title": "VAE 編碼"
+  }
+ },
+ "170:162": {
+  "inputs": {
+   "clip_name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+   "type": "qwen_image",
+   "device": "default"
+  },
+  "class_type": "CLIPLoader",
+  "_meta": {
+   "title": "載入 CLIP"
+  }
+ },
+ "170:163": {
+  "inputs": {
+   "switch": [
+    "170:168",
+    0
+   ],
+   "on_false": [
+    "170:152",
+    0
+   ],
+   "on_true": [
+    "170:152",
+    0
+   ]
+  },
+  "class_type": "ComfySwitchNode",
+  "_meta": {
+   "title": "Switch (Model)"
+  }
+ },
+ "170:168": {
+  "inputs": {
+   "value": false
+  },
+  "class_type": "PrimitiveBoolean",
+  "_meta": {
+   "title": "Enable 4steps LoRA?"
+  }
+ },
+ "170:164": {
+  "inputs": {
+   "switch": [
+    "170:168",
+    0
+   ],
+   "on_false": [
+    "170:154",
+    0
+   ],
+   "on_true": [
+    "170:155",
+    0
+   ]
+  },
+  "class_type": "ComfySwitchNode",
+  "_meta": {
+   "title": "Switch (CFG)"
+  }
+ },
+ "170:167": {
+  "inputs": {
+   "switch": [
+    "170:168",
+    0
+   ],
+   "on_false": [
+    "170:166",
+    0
+   ],
+   "on_true": [
+    "170:165",
+    0
+   ]
+  },
+  "class_type": "ComfySwitchNode",
+  "_meta": {
+   "title": "Switch (Steps)"
+  }
+ },
+ "170:169": {
+  "inputs": {
+   "seed": 612748236608762,
+   "steps": [
+    "170:167",
+    0
+   ],
+   "cfg": [
+    "170:164",
+    0
+   ],
+   "sampler_name": "euler",
+   "scheduler": "simple",
+   "denoise": 1.0,
+   "model": [
+    "170:163",
+    0
+   ],
+   "positive": [
+    "170:148",
+    0
+   ],
+   "negative": [
+    "170:147",
+    0
+   ],
+   "latent_image": [
+    "170:156",
+    0
+   ]
+  },
+  "class_type": "KSampler",
+  "_meta": {
+   "title": "KSampler"
+  }
+ },
+ "170:158": {
+  "inputs": {
+   "samples": [
+    "170:169",
+    0
+   ],
+   "vae": [
+    "170:146",
+    0
+   ]
+  },
+  "class_type": "VAEDecode",
+  "_meta": {
+   "title": "VAE 解碼"
+  }
+ },
+ "170:160": {
+  "inputs": {
+   "image": [
+    "41",
+    0
+   ]
+  },
+  "class_type": "FluxKontextImageScale",
+  "_meta": {
+   "title": "FluxKontextImageScale"
+  }
+ },
+ "170:161": {
+  "inputs": {
+   "unet_name": "qwen_image_edit_2511_fp8mixed.safetensors",
+   "weight_dtype": "default"
+  },
+  "class_type": "UNETLoader",
+  "_meta": {
+   "title": "載入擴散模型"
+  }
+ },
+ "170:145": {
+  "inputs": {
+   "shift": 3.1,
+   "model": [
+    "170:198",
+    0
+   ]
+  },
+  "class_type": "ModelSamplingAuraFlow",
+  "_meta": {
+   "title": "模型取樣 AuraFlow"
+  }
+ },
+ "170:166": {
+  "inputs": {
+   "value": 20
+  },
+  "class_type": "PrimitiveInt",
+  "_meta": {
+   "title": "Steps"
+  }
+ },
+ "170:154": {
+  "inputs": {
+   "value": 2.5
+  },
+  "class_type": "PrimitiveFloat",
+  "_meta": {
+   "title": "CFG"
+  }
+ },
+ "170:165": {
+  "inputs": {
+   "value": 4
+  },
+  "class_type": "PrimitiveInt",
+  "_meta": {
+   "title": "Steps"
+  }
+ },
+ "170:196": {
+  "inputs": {
+   "unet_name": "qwen-image-edit-2511-Q6_K.gguf"
+  },
+  "class_type": "UnetLoaderGGUF",
+  "_meta": {
+   "title": "Unet Loader (GGUF)"
+  }
+ },
+ "170:198": {
+  "inputs": {
+   "lora_name": "Qwen Edit 2511/qwen-image-edit-2511-multiple-angles-lora.safetensors",
+   "strength_model": 0.9,
+   "model": [
+    "170:196",
+    0
+   ]
+  },
+  "class_type": "LoraLoaderModelOnly",
+  "_meta": {
+   "title": "LoraLoaderModelOnly"
+  }
+ }
+}

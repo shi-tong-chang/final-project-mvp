@@ -1,0 +1,523 @@
+{
+ "project": "WP4K v3 two-track (A: IPA linear0.6/end0.7, B: painterly prompt)",
+ "date": "2026-07-10",
+ "stage_a": {
+  "checkpoint": "Illustrious/waiNSFWIllustrious_v140.safetensors",
+  "width": 1344,
+  "height": 768,
+  "steps": 30,
+  "cfg": 5.5,
+  "sampler": "euler_ancestral",
+  "scheduler": "normal",
+  "clip_skip": -2,
+  "denoise": 1.0,
+  "ipadapter_trackA": {
+   "clip_vision": "clip-vision_vit-h.safetensors",
+   "ipadapter_file": "ip-adapter-plus_sdxl_vit-h.safetensors",
+   "weight": 0.6,
+   "weight_type": "linear",
+   "combine_embeds": "concat",
+   "start_at": 0.0,
+   "end_at": 0.7,
+   "embeds_scaling": "V only",
+   "reference": "06ECE4F5-0895-4306-A15E-12C9DB491018.png"
+  },
+  "positive_trackA": "masterpiece, best quality, amazing quality, very aesthetic, absurdres, intricate details,\n1girl, solo, animal ears, cat ears, animal ear fluff, very long hair, white hair, sidelocks, red eyes, half-lidded eyes, looking at viewer, expressionless, light blush,\nslender, long legs, hair ribbon, black ribbon, hair flower, red rose, black babydoll, frilled dress, red trim, lace trim, detached sleeves, cleavage, bare shoulders, bare legs, barefoot,\nsitting on bed, arm support, full body,\nluxurious bed, (black satin sheets:1.2), silk, red frilled pillows, red carpet,\ngothic architecture, ornate bedroom, gold pillar, candlestand, candlelight, lamp, nightstand, window, night, city lights, red curtains, (dark room:1.1), dim lighting,\n(shiny:1.1), shiny skin, shiny clothes, warm lighting, rim light, chiaroscuro, cinematic lighting, depth of field, glowing, light particles",
+  "positive_trackB": "masterpiece, best quality, amazing quality, very aesthetic, absurdres, intricate details,\n1girl, solo, animal ears, cat ears, animal ear fluff, very long hair, white hair, sidelocks, red eyes, half-lidded eyes, looking at viewer, expressionless, light blush,\nslender, long legs, hair ribbon, black ribbon, hair flower, red rose, black babydoll, frilled dress, red trim, lace trim, detached sleeves, cleavage, bare shoulders, bare legs, barefoot,\nsitting on bed, arm support, full body,\nluxurious bed, (black satin sheets:1.2), silk, red frilled pillows, red carpet,\ngothic architecture, ornate bedroom, gold pillar, candlestand, candlelight, lamp, nightstand, window, night, city lights, red curtains, (dark room:1.1), dim lighting,\n(shiny skin:1.2), (glossy:1.2), shiny clothes, warm lighting, rim light, chiaroscuro, (cinematic lighting:1.2), (dim lighting:1.2), volumetric lighting, light rays, detailed shading, depth of field, glowing, light particles, detailed background",
+  "negative": "bad quality, worst quality, worst detail, sketch, censored, watermark, signature, artist name, text,\nbad hands, bad anatomy, extra digits, extra limbs, multiple girls, 2girls, furry, animal nose,\nflat color, flat shading, blurry, 3d, realistic, jpeg artifacts",
+  "candidates": [
+   {
+    "track": "A_ipa",
+    "seed": 225928423106122,
+    "server_file": "WP4K3_cand_00001_.png",
+    "local": "C:\\Users\\User\\ComfyUI_database\\wallpaper_4k\\candidates_v3\\A_ipa_seed225928423106122_WP4K3_cand_00001_.png"
+   },
+   {
+    "track": "A_ipa",
+    "seed": 838108704420753,
+    "server_file": "WP4K3_cand_00002_.png",
+    "local": "C:\\Users\\User\\ComfyUI_database\\wallpaper_4k\\candidates_v3\\A_ipa_seed838108704420753_WP4K3_cand_00002_.png"
+   },
+   {
+    "track": "A_ipa",
+    "seed": 684555801531915,
+    "server_file": "WP4K3_cand_00003_.png",
+    "local": "C:\\Users\\User\\ComfyUI_database\\wallpaper_4k\\candidates_v3\\A_ipa_seed684555801531915_WP4K3_cand_00003_.png"
+   },
+   {
+    "track": "B_prompt",
+    "seed": 844639784021753,
+    "server_file": "WP4K3_cand_00004_.png",
+    "local": "C:\\Users\\User\\ComfyUI_database\\wallpaper_4k\\candidates_v3\\B_prompt_seed844639784021753_WP4K3_cand_00004_.png"
+   },
+   {
+    "track": "B_prompt",
+    "seed": 999755377661549,
+    "server_file": "WP4K3_cand_00005_.png",
+    "local": "C:\\Users\\User\\ComfyUI_database\\wallpaper_4k\\candidates_v3\\B_prompt_seed999755377661549_WP4K3_cand_00005_.png"
+   },
+   {
+    "track": "B_prompt",
+    "seed": 254411240397573,
+    "server_file": "WP4K3_cand_00006_.png",
+    "local": "C:\\Users\\User\\ComfyUI_database\\wallpaper_4k\\candidates_v3\\B_prompt_seed254411240397573_WP4K3_cand_00006_.png"
+   }
+  ],
+  "positive": "masterpiece, best quality, amazing quality, very aesthetic, absurdres, intricate details,\n1girl, solo, animal ears, cat ears, animal ear fluff, very long hair, white hair, sidelocks, red eyes, half-lidded eyes, looking at viewer, expressionless, light blush,\nslender, long legs, hair ribbon, black ribbon, hair flower, red rose, black babydoll, frilled dress, red trim, lace trim, detached sleeves, cleavage, bare shoulders, bare legs, barefoot,\nsitting on bed, arm support, full body,\nluxurious bed, (black satin sheets:1.2), silk, red frilled pillows, red carpet,\ngothic architecture, ornate bedroom, gold pillar, candlestand, candlelight, lamp, nightstand, window, night, city lights, red curtains, (dark room:1.1), dim lighting,\n(shiny skin:1.2), (glossy:1.2), shiny clothes, warm lighting, rim light, chiaroscuro, (cinematic lighting:1.2), (dim lighting:1.2), volumetric lighting, light rays, detailed shading, depth of field, glowing, light particles, detailed background",
+  "winner": {
+   "track": "B_prompt",
+   "seed": 844639784021753
+  }
+ },
+ "stage_bc": {
+  "winner_input": "C:/Users/User/ComfyUI_database/wallpaper_4k/candidates_v3/B_prompt_seed844639784021753_WP4K3_cand_00004_.png",
+  "refine_seed": 667498834088003,
+  "refine_size": [
+   2688,
+   1536
+  ],
+  "denoise": 0.4,
+  "steps": 30,
+  "cfg": 5.5,
+  "sampler": "euler_ancestral",
+  "scheduler": "normal",
+  "upscaler": "RealESRGAN_x4plus_anime_6B.pth",
+  "final_size": [
+   3840,
+   2160
+  ],
+  "elapsed_s": 60
+ },
+ "stage_a_v4": {
+  "tracks": {
+   "Z": {
+    "model": "z_image_turbo_bf16 (fp8_e4m3fn_fast)",
+    "te": "qwen_3_4b lumina2",
+    "vae": "ae.safetensors",
+    "shift": 3.0
+   },
+   "Q": {
+    "model": "Qwen-Rapid-AIO-NSFW-v23",
+    "shift": 3.1
+   }
+  },
+  "width": 1344,
+  "height": 768,
+  "steps": 8,
+  "cfg": 1.0,
+  "sampler": "res_multistep",
+  "scheduler": "simple",
+  "positive_nl": "高精緻半寫實動漫插畫,2.5D 厚塗質感,接近真人的皮膚與光影渲染但保持動漫美型臉。一位身材修長成熟的銀白色長直髮貓耳少女,白色貓耳與髮色相同,紅色眼睛、慵懶半垂的眼神、安靜憂鬱的表情,頭髮側邊別著一朵紅玫瑰和黑色緞帶。她穿著黑色蕾絲吊帶短睡裙,睡裙有暗紅色荷葉邊與蝴蝶結,配黑色蕾絲分離袖,赤腳優雅地坐在大床邊緣,雙腿修長自然下垂,一隻手撐在身後的床上。大床鋪著黑色緞面床單,泛著柔和光澤,床上散落紅色荷葉邊絲質抱枕,床沿垂著暗紅色綢緞床罩,床底透出溫暖的紅色氛圍燈光。哥德式宮廷臥室:金色雕花大理石圓柱、深紅色天鵝絨窗簾、點燃的金色燭台、床頭櫃上的暖黃檯燈與紅玫瑰花瓶,大窗外是深夜的哥德式城市燈火。主光源是溫暖燭光,輔以紅色氛圍光,深邃陰影,電影感打光,皮膚、緞面與絲綢都有精緻的高光,橫幅寬螢幕構圖,畫面極其精緻細膩。",
+  "candidates": [
+   {
+    "track": "Z",
+    "seed": 976144363739275,
+    "server_file": "WP4KZ_cand_00001_.png",
+    "local": "C:\\Users\\User\\ComfyUI_database\\wallpaper_4k\\candidates_v4\\Z_seed976144363739275_WP4KZ_cand_00001_.png"
+   },
+   {
+    "track": "Z",
+    "seed": 188113216282319,
+    "server_file": "WP4KZ_cand_00002_.png",
+    "local": "C:\\Users\\User\\ComfyUI_database\\wallpaper_4k\\candidates_v4\\Z_seed188113216282319_WP4KZ_cand_00002_.png"
+   },
+   {
+    "track": "Z",
+    "seed": 537442800000132,
+    "server_file": "WP4KZ_cand_00003_.png",
+    "local": "C:\\Users\\User\\ComfyUI_database\\wallpaper_4k\\candidates_v4\\Z_seed537442800000132_WP4KZ_cand_00003_.png"
+   },
+   {
+    "track": "Q",
+    "seed": 500864036692043,
+    "server_file": "WP4KQ_cand_00001_.png",
+    "local": "C:\\Users\\User\\ComfyUI_database\\wallpaper_4k\\candidates_v4\\Q_seed500864036692043_WP4KQ_cand_00001_.png"
+   },
+   {
+    "track": "Q",
+    "seed": 258402282471875,
+    "server_file": "WP4KQ_cand_00002_.png",
+    "local": "C:\\Users\\User\\ComfyUI_database\\wallpaper_4k\\candidates_v4\\Q_seed258402282471875_WP4KQ_cand_00002_.png"
+   },
+   {
+    "track": "Q",
+    "seed": 885391720484196,
+    "server_file": "WP4KQ_cand_00003_.png",
+    "local": "C:\\Users\\User\\ComfyUI_database\\wallpaper_4k\\candidates_v4\\Q_seed885391720484196_WP4KQ_cand_00003_.png"
+   }
+  ]
+ },
+ "stage_bc_v4": {
+  "Z": {
+   "pid": "9b2d5d87-d486-41dc-bc32-d2f08da4acec",
+   "seed": 229225875070969,
+   "winner": "C:/Users/User/ComfyUI_database/wallpaper_4k/candidates_v4/Z_seed188113216282319_WP4KZ_cand_00002_.png",
+   "refined": "C:\\Users\\User\\ComfyUI_database\\wallpaper_4k\\WP4KZ_refined_seed229225875070969_WP4KZ_refined_00001_.png",
+   "final": "C:\\Users\\User\\ComfyUI_database\\wallpaper_4k\\WP4KZ_final_seed229225875070969_WP4KZ_final_00001_.png",
+   "denoise": 0.35,
+   "steps": 8,
+   "cfg": 1.0,
+   "refine_size": [
+    2688,
+    1536
+   ],
+   "final_size": [
+    3840,
+    2160
+   ],
+   "upscaler": "RealESRGAN_x4plus_anime_6B.pth"
+  },
+  "Q": {
+   "pid": "b2967bbc-a0a0-41af-b2f1-c03453d8fa3c",
+   "seed": 574273992625529,
+   "winner": "C:/Users/User/ComfyUI_database/wallpaper_4k/candidates_v4/Q_seed258402282471875_WP4KQ_cand_00002_.png",
+   "refined": "C:\\Users\\User\\ComfyUI_database\\wallpaper_4k\\WP4KQ_refined_seed574273992625529_WP4KQ_refined_00001_.png",
+   "final": "C:\\Users\\User\\ComfyUI_database\\wallpaper_4k\\WP4KQ_final_seed574273992625529_WP4KQ_final_00001_.png",
+   "denoise": 0.35,
+   "steps": 8,
+   "cfg": 1.0,
+   "refine_size": [
+    2688,
+    1536
+   ],
+   "final_size": [
+    3840,
+    2160
+   ],
+   "upscaler": "RealESRGAN_x4plus_anime_6B.pth"
+  }
+ },
+ "stage_a_v5": {
+  "pipeline": "Qwen-Edit-2511 GGUF Q6 dual-image insert (no LoRA)",
+  "image1_scene": "C:\\Users\\User\\Desktop\\contronet_test\\ChatGPT Image 2026年7月10日 下午02_17_14.png",
+  "image2_char": "Qwen_Edit_2511_00033_.png (server output)",
+  "steps": 20,
+  "cfg": 2.5,
+  "sampler": "euler",
+  "scheduler": "simple",
+  "shift": 3.1,
+  "denoise": 1.0,
+  "prompt": "將第二張圖中的角色完整放進第一張圖的場景裡:她優雅地坐在大床邊緣的正中央,面向鏡頭,雙腿自然下垂,黑色長裙裙襬與暗紅色襯裡在床沿自然鋪開。她的髮型、銀白色長直髮、紅色眼睛、五官、黑金哥德禮服、金色刺繡、暗紅色襯裡、紅玫瑰頭飾、黑色蕾絲頭紗、金色垂墜耳環、大腿帶、金飾黑色高跟鞋,完全以第二張圖為準,不做任何更改。第一張圖的場景與構圖保持一致:黑色緞面大床與紅色荷葉邊、紅色緞面枕頭、金色圓柱、點燃的蠟燭與燭台、床頭燈、紅玫瑰花瓶、窗外深夜城市燈火、床底透出的紅色氛圍光、黑色大理石地板。用場景的溫暖燭光為角色打光,在床單上投下自然的接觸陰影。整體畫面統一為精緻動漫插畫風格,細節豐富。",
+  "candidates": [
+   {
+    "seed": 640200685988679,
+    "server_file": "WP4KC_cand_00001_.png",
+    "local": "C:\\Users\\User\\ComfyUI_database\\wallpaper_4k\\candidates_v5\\C_seed640200685988679_WP4KC_cand_00001_.png"
+   },
+   {
+    "seed": 499821007932441,
+    "server_file": "WP4KC_cand_00002_.png",
+    "local": "C:\\Users\\User\\ComfyUI_database\\wallpaper_4k\\candidates_v5\\C_seed499821007932441_WP4KC_cand_00002_.png"
+   },
+   {
+    "seed": 199109761141160,
+    "server_file": "WP4KC_cand_00003_.png",
+    "local": "C:\\Users\\User\\ComfyUI_database\\wallpaper_4k\\candidates_v5\\C_seed199109761141160_WP4KC_cand_00003_.png"
+   }
+  ]
+ },
+ "stage_bc_v5": {
+  "winner": "C_seed640200685988679 (canon 服裝忠實度最高:金十字+鎖鏈、玫瑰方位正確、構圖居中)",
+  "alternates": {
+   "C3_seed199109761141160": "最華麗裙襬版",
+   "C2_seed499821007932441": "胸衣偏離原設"
+  },
+  "upscale": "anime_6B 4x -> lanczos crop-center 3840x2160 (primary, 線條利) / x2plus x2 (softer alt)",
+  "finals": [
+   "WP4KC_anime6B_WP4KC_final_anime6B_00001_.png",
+   "WP4KC_x2plus_WP4KC_final_x2plus_00001_.png"
+  ],
+  "note": "v5 前一批 3 job 全滅於 CUDA/CPU weight mismatch(28GB AIO 卸載後髒狀態),重啟 ComfyUI 後首發乾淨 3/3;單張 ~240s"
+ },
+ "stage_a_v6": {
+  "pipeline": "2511 single-image 4-instruction edit on v5 winner C1",
+  "base_image": "C:/Users/User/ComfyUI_database/wallpaper_4k/candidates_v5/C_seed640200685988679_WP4KC_cand_00001_.png",
+  "steps": 20,
+  "cfg": 2.5,
+  "sampler": "euler",
+  "scheduler": "simple",
+  "shift": 3.1,
+  "prompt": "對畫面中坐在床沿的銀髮少女做以下修改:1. 在她頭頂加上一對與髮色相同的銀白色貓耳,毛茸茸自然融入髮型,同時保留紅玫瑰頭飾與黑色蕾絲頭紗。2. 她的禮服改為同樣黑金哥德風格的黑色蕾絲吊帶睡裙:輕薄的黑色蕾絲面料、暗紅色荷葉邊、胸前緞帶蝴蝶結、黑色蕾絲分離袖,裙長到大腿,保留大腿帶,改為赤腳、去掉高跟鞋。3. 她的坐姿轉向:身體與雙腿朝向畫面右前方,呈四分之三側坐在床沿,臉仍看向鏡頭。4. 床底下的燈條光從紅色改為溫暖的黃色燭光色,如蠟燭點燃般的暖黃光暈,黑色大理石地板上的反光也改為暖黃色。其他一切保持不變:她的銀白色長直髮、紅色眼睛、五官、金色垂墜耳環,以及場景的黑色緞面大床、紅色緞面枕頭、金色圓柱、燭台、檯燈、窗外深夜城市燈火。精緻動漫插畫風格,細節豐富。",
+  "candidates": [
+   {
+    "seed": 204613191311454,
+    "server_file": "WP4KE_cand_00001_.png",
+    "local": "C:\\Users\\User\\ComfyUI_database\\wallpaper_4k\\candidates_v6\\E_seed204613191311454_WP4KE_cand_00001_.png"
+   },
+   {
+    "seed": 572102758957223,
+    "server_file": "WP4KE_cand_00002_.png",
+    "local": "C:\\Users\\User\\ComfyUI_database\\wallpaper_4k\\candidates_v6\\E_seed572102758957223_WP4KE_cand_00002_.png"
+   },
+   {
+    "seed": 738765731331311,
+    "server_file": "WP4KE_cand_00003_.png",
+    "local": "C:\\Users\\User\\ComfyUI_database\\wallpaper_4k\\candidates_v6\\E_seed738765731331311_WP4KE_cand_00003_.png"
+   }
+  ]
+ },
+ "stage_v6": {
+  "edit1_4instr_base_C1": {
+   "winner_kept_rose_veil": "E_seed204613191311454",
+   "note": "3/3 貓耳+睡裙+暖黃燈成功;坐向右轉 0/3 未服從;玫瑰被翻到她左側"
+  },
+  "edit2_pose_focus_base_E1": {
+   "seeds": [
+    554182277587310,
+    327091057793259,
+    190780138285712
+   ],
+   "note": "單焦點編輯 3/3 坐向右+玫瑰歸位",
+   "winner": 190780138285712
+  },
+  "final": "WP4KE_final_seed190780138285712_WP4KE_final_00001_.png (anime_6B 4x -> 3840x2160)"
+ },
+ "stage_v7_direct_upscale": {
+  "source": "C:\\Users\\User\\Desktop\\contronet_test\\ChatGPT Image 2026年7月10日 下午01_21_51.png (1672x941)",
+  "pure": "WP4KD_pure_WP4KD_pure_00001_.png = anime_6B 4x -> lanczos crop-center 3840x2160,內容零改動",
+  "enhanced": "WP4KD_enhanced_WP4KD_enhanced_00001_.png = anime_6B -> 2672x1504 -> Z-image tiled denoise 0.25 -> anime_6B -> 3840x2160;微細節大增,已知微改:左耳新增垂墜耳環、緞帶/袖口微重塑"
+ },
+ "stage_v8_soft_final": {
+  "file": "WP4KD_soft_WP4KD_soft_00001_.png",
+  "recipe": "x2plus 2x -> lanczos 2672x1504 -> Z-image tiled denoise 0.20 seed 424242424301(柔順導向 prompt,無耳環描述) -> x2plus 2x -> lanczos crop-center 3840x2160",
+  "fixes": "耳環已移除(低 denoise 新 seed 未再生成);髮絲柔化(x2plus 取代 anime_6B + 0.25→0.20)",
+  "user_context": "使用者對 enhanced 版整體滿意,僅要求拔耳環+髮絲柔順"
+ },
+ "stage_v9_chest_inpaint": {
+  "base": "WP4KD_soft_WP4KD_soft_00001_.png",
+  "mask": "胸口+右腋橢圓×2,GaussianBlur 40 羽化(scratchpad/chest_mask.png)",
+  "engine": "Z-image turbo denoise 0.5 @3840x2160 tiled + SetLatentNoiseMask + ImageCompositeMasked(遮罩外像素級不動)",
+  "seeds": {
+   "777000111222": "勝者=自然對稱+蝴蝶結酒紅緞面",
+   "888111222333": "罩杯同心圓紋淘汰",
+   "999222333444": "胸型變小+串珠雜亂淘汰"
+  },
+  "final": "WP4KD_soft_inpaint_FINAL_seed777000111222.png"
+ },
+ "stage_v10": {
+  "armfix": {
+   "marks": [
+    [
+     1665,
+     955
+    ],
+    [
+     2110,
+     925
+    ]
+   ],
+   "winner_seed": 313131313101,
+   "final": "WP4KD_FINAL_v2_armfix.png"
+  },
+  "sexy_variant": {
+   "base": "WP4KD_FINAL_v2_armfix.png",
+   "engine": "2511 單圖編輯",
+   "prompt_theme": "魅惑表情(緋紅/半瞇濕潤/唇微張)+後仰拱背撐床+臂圈滑落+裙襬上滑露腿+燭光潮紅濕潤肌",
+   "candidates": {
+    "536373824487407": "優雅款",
+    "932771875613823": "勝者=色氣最完整",
+    "167812668313648": "爬行完成已存(備選)"
+   },
+   "finishing": "x2plus→2672×1504→Z-image 0.20(seed 515151515101)→x2plus→3840×2160(v8 同款柔化配方)",
+   "earfix": "Z-image 0.5 首次點修在紅頸墜語境下重生紅耳珠;二修改用「髮絲蓋耳+無飾品」prompt+denoise 0.55×3 seeds,seed 101010101011 乾淨採用",
+   "final": "WP4KS_sexy_FINAL_v2_earfix.png"
+  }
+ },
+ "stage_v11_armbare": {
+  "request": "撐床手臂整隻裸露(移除黑蕾絲臂圈),保留腕部紅髮圈",
+  "attempt1": "直接 inpaint denoise 0.6 ×3 seeds 全滅——黑蕾絲殘影錨定,模型必重畫臂飾",
+  "attempt2": "prime-the-canvas:PIL 先把臂圈區填膚色漸層(上臂→前臂取樣)再 inpaint 0.5 ×2——2/2 成功,選 808080808001",
+  "attempt3": "交界霧影補刀:小遮罩 denoise 0.42 邊界銳化 ×2,選 606060606001(505 長白羽毛淘汰)",
+  "final": "WP4KD_FINAL_v3_armbare.png"
+ },
+ "stage_v12_apron": {
+  "base": "WP4KD_FINAL_v3_armbare.png",
+  "engine": "2511 三項編輯(表情/裸圍裙/罩杯+2)",
+  "scale_line": "圍裙完整遮住胸部中央與私密部位,不露點(提示詞內鎖定)",
+  "candidates": {
+   "149019097864681": "A1 害羞加重備選",
+   "157088691383500": "A2 馬甲裙跑偏淘汰",
+   "585464282576075": "A3 勝者"
+  },
+  "finish": "opt2 配方(x2plus→2672→z-refine 0.23 圍裙描述→anime_6B→4K), seed 454545454501",
+  "final": "WP4KA_apron_FINAL_seed585464282576075.png"
+ },
+ "stage_v13_opt2": {
+  "request": "主版清晰度:選項2(重精修)",
+  "recipe": "v2_armfix→lanczos 2672×1504→z-refine 0.23(柔髮prompt+無耳環)→anime_6B 4x→lanczos 3840×2160",
+  "qa": "構圖 MSE 驗證與 v2 一致(scale 1.0 MSE 81);無耳環;手臂/胸口修正保留",
+  "final": "WP4KD_FINAL_v2_opt2_crisp.png",
+  "sharpen_alts": [
+   "WP4KD_FINAL_v2_sharp70.png",
+   "WP4KD_FINAL_v2_sharp130.png"
+  ]
+ },
+ "stage_v14_ducksit": {
+  "goal": "鴨子坐(割座/wariza)姿勢編輯:WP4KD_FINAL_v3_armbare 的女生改為鴨子坐在床正中央,再走 opt2 放大鏈",
+  "base_image": "WP4KD_FINAL_v3_armbare.png",
+  "failed_rounds": {
+   "ducksit_text_only": {
+    "seeds": [
+     519926669166916,
+     257825507308076,
+     950303842657190
+    ],
+    "result": "0/3 姿勢不動或只挪手,鴨子坐直述 2511 不理解"
+   },
+   "ducksit2_pose_ref_transfer": {
+    "seeds": [
+     566994583073188,
+     491682675209543,
+     767004114557893
+    ],
+    "pose_ref": "WAI wariza tag 生成的姿勢參考圖(scratchpad wariza_677800612926693.png)當 image2",
+    "result": "0/3 邊緣錨定:人黏在床沿,姿勢遷移無效"
+   },
+   "ducksit3_relocation_plus_ref": {
+    "seeds": [
+     613322977846367,
+     369661647424294,
+     516846539989543
+    ],
+    "result": "0/3 搬位成功但姿勢仍非鴨子坐"
+   }
+  },
+  "winning_step_a": {
+   "workflow": "2511 單圖編輯(無姿勢參考圖!),把鴨子坐拆解成 2511 原生理解的「正座跪坐」+逐肢體描述+搬位床中央",
+   "model": "qwen-image-edit-2511-Q6_K.gguf",
+   "seed": 966869739023339,
+   "sampler": "euler/simple, 20 steps, CFG 2.5, denoise 1.0, AuraFlow shift 3.1",
+   "prompt": "她從床沿移動到大床的正中央,改為正座跪坐在床墊上:雙腿向後折起,小腿壓在大腿下方,臀部坐在自己的腳跟上,雙膝併攏朝向鏡頭,雙手輕放在大腿上,雙腳完全離開床沿和地板,整個人都在床墊上,身體面向鏡頭。其他一切保持不變:她的銀白色長直髮、白色貓耳、紅色眼睛、一朵紅玫瑰頭飾在她自己的右側、黑色蕾絲吊帶睡裙與暗紅色荷葉邊、只有一隻手腕戴紅色髮圈、赤腳,以及整個場景:黑色緞面大床、紅色荷葉邊枕頭、金色圓柱、燭台、檯燈、床底暖黃燈光、窗外深夜城市、鏡頭角度。精緻半寫實動漫插畫風格,筆觸柔和細膩。",
+   "alternates_rejected": {
+    "839065113356857": "一腿垂床沿=隨性坐非鴨子坐",
+    "485081653339246": "正座(臀壓腳跟正上方)非鴨子坐,手部交疊略糊"
+   },
+   "note": "提示詞寫的是正座(坐腳跟上),成品自然滑向鴨子坐判讀(雙足外翻分列臀側)——1/3 命中",
+   "output": "candidates_v14/seiza_seed966869739023339_WP4KP4_seiza_00001_.png"
+  },
+  "finish_opt2": {
+   "chain": "x2plus 2x -> lanczos 2672x1504 -> Z-image refine denoise 0.23 (seed 676767676701, 8 steps, CFG 1.0, res_multistep/simple) -> anime_6B 4x -> lanczos 3840x2160 crop=center",
+   "refine_prompt": "高精緻半寫實動漫插畫,2.5D 厚塗質感,線條柔和自然。一位銀白色長直髮貓耳少女,白色貓耳,紅色眼睛,柔順如絲的銀白長髮,安靜的表情,沒有戴耳環。頭髮右側有一朵紅玫瑰與黑色緞帶,穿黑色蕾絲吊帶睡裙、暗紅色荷葉邊、胸前紅色緞帶,單隻手腕戴紅色髮圈,鴨子坐在大床正中央的床墊上:雙膝併攏朝向鏡頭,小腿向外折在大腿兩側,赤腳的腳掌露在臀部兩旁,雙手輕放在身前大腿上。黑色緞面床單泛柔和光澤,紅色緞面荷葉邊枕頭,暗紅色綢緞床罩垂落床沿,床底透出溫暖的橙黃色氛圍燈光。金色圓柱、燭台燭光、床頭暖黃檯燈、紅玫瑰花瓶,窗外深夜城市燈火。溫暖燭光主光源,深邃陰影,電影感打光,柔和細膩的皮膚與緞面高光,整體筆觸柔和精緻。",
+   "qa": "3840x2160 confirmed;鴨子坐判讀成立(雙膝朝鏡頭+雙足外翻臀側);無自發耳環;單左腕紅髮圈保留;手部清晰",
+   "output": "WP4KP_ducksit_FINAL_seed966869739023339.png"
+  }
+ },
+ "stage_v15_side_split": {
+  "goal": "側身一字馬+上身扭轉回正面看鏡頭(2511 單圖姿勢編輯,難姿勢第4階打法直接命中)",
+  "base_image": "candidates_v14/seiza_seed966869739023339_WP4KP4_seiza_00001_.png(鴨子坐 Step A 勝者,人已在床中央=位置錨定優勢)",
+  "workflow": "2511 單圖編輯,無姿勢參考圖,逐肢體描述;一字馬為 Qwen 原生中文詞彙,3/3 全命中姿勢",
+  "model": "qwen-image-edit-2511-Q6_K.gguf",
+  "sampler": "euler/simple, 20 steps, CFG 2.5, denoise 1.0, AuraFlow shift 3.1",
+  "pose_prompt": "她的姿勢改為側身一字馬:她在床墊正中央做一字馬劈腿,雙腿沿著床面前後完全劈開,伸直成一條水平直線——一條腿向畫面左方完全伸直,另一條腿向畫面右方完全伸直,兩條腿都平貼在床面上,膝蓋完全伸直,腳尖繃直,赤腳。她的骨盆側向畫面,但上半身從腰部向鏡頭方向扭轉,肩膀與胸口轉回正對鏡頭,頭也轉向正面,臉直視鏡頭,微微挺胸,背部挺直。雙手自然輕放在身前的床面上支撐平衡。黑色蕾絲睡裙的裙襬自然垂落在骨盆與大腿根部。其他一切保持不變:她的銀白色長直髮、白色貓耳、紅色眼睛、安靜的表情、一朵紅玫瑰頭飾在她自己的右側、黑色蕾絲吊帶睡裙與暗紅色荷葉邊、只有一隻手腕戴紅色髮圈,以及整個場景:黑色緞面大床、紅色荷葉邊枕頭、金色圓柱、燭台、檯燈、床底暖黃燈光、窗外深夜城市、鏡頭角度。精緻半寫實動漫插畫風格,筆觸柔和細膩。",
+  "seeds": {
+   "722689590841076": "備選:雙手對稱撐身前(最貼指令)、雙手全清晰;劈腿線略折向床角、右腳勾起",
+   "209923016892071": "淘汰:身體前傾靠左撐,挺直回正面讀感弱,疑似雙髮圈",
+   "469120791622121": "勝者:劈腿水平線最乾淨、上身最挺直正對鏡頭;右腳繃直漂亮;小瑕疵=左腳趾床沿微捲、右手藏裙後"
+  },
+  "finish_opt2": {
+   "chain": "x2plus 2x -> lanczos 2672x1504 -> Z-image refine denoise 0.23 (seed 676767676701) -> anime_6B 4x -> lanczos 3840x2160 crop=center",
+   "output": "WP4KP5_split_FINAL_seed469120791622121.png"
+  },
+  "ops_note": "跑批前依鐵律6重啟(v14 批爬行中完成=髒context);重啟後全速 ~210s/張,3張 t+585s"
+ },
+ "stage_v16_shift_panties": {
+  "goal": "①整體右移讓全身完整在床墊內 ②裙襬不擋黑色蕾絲內褲 ③畫面右側腳掌重畫清晰(v15 成品的三項修改)",
+  "base_image": "WP4KP5_split_FINAL_seed469120791622121.png",
+  "model": "qwen-image-edit-2511-Q6_K.gguf(euler/simple, 20, CFG 2.5, denoise 1.0, shift 3.1)",
+  "failed_combined_round": {
+   "seeds": [
+    361106527057054,
+    632402297366887,
+    757505860996276
+   ],
+   "result": "搬位+服裝混跑 → 2/3 完全丟失一字馬姿勢、1/3 姿勢退化且左腳掛床外;0/3 合格",
+   "lesson": "搬位+服裝混跑會沖掉「姿勢保持不變」;新雷,回寫 WORKFLOWS.md 服從分層表"
+  },
+  "round_a_relocation_solo": {
+   "prompt": "她整個人連同完整的側身一字馬姿勢向畫面右方平移一小段距離,移到床墊中央偏右的位置。平移後她的整個身體、兩條劈開的腿和兩隻腳都完全落在黑色床墊範圍內,左腳腳尖距離床墊左邊緣有明顯的距離,不再貼著床角,右腳也完全在床墊上。她的姿勢完全保持原樣,一絲不變:雙腿沿床面向左右劈開,伸直成一條水平直線平貼床面,膝蓋伸直,腳尖繃直,赤腳,兩隻腳的腳掌、腳背、腳趾輪廓清晰分明,每根腳趾清楚可辨;上半身從腰部向鏡頭扭轉,肩膀與胸口正對鏡頭,臉直視鏡頭,背部挺直,一隻手輕撐在身前的床面上。其他一切保持不變:她的銀白色長直髮、白色貓耳、紅色眼睛、安靜的表情、一朵紅玫瑰頭飾在她自己的右側、黑色蕾絲吊帶睡裙與暗紅色荷葉邊、裙襬垂落方式、只有一隻手腕戴紅色髮圈,以及整個場景:黑色緞面大床、紅色荷葉邊枕頭、金色圓柱、燭台、檯燈、床底暖黃燈光、窗外深夜城市、鏡頭角度。精緻半寫實動漫插畫風格,筆觸柔和細膩。",
+   "seeds": {
+    "679726536754450": "淘汰:右腿折到身後,劈腿掉",
+    "806998875520102": "勝者:劈腿完整+兩腳都在床墊內+上身正對鏡頭;100%過(右腳掌清晰)",
+    "993847877218672": "淘汰:雙腳在床內但上身轉成3/4背對回眸"
+   },
+   "ops": "第一張爬行30分鐘(桌面VRAM爭用),後兩張正常;批後依鐵律6重啟"
+  },
+  "round_b_skirt_solo": {
+   "base": "candidates_v16/move_seed806998875520102_WP4KP6A_move_00002_.png",
+   "prompt": "她的黑色蕾絲睡裙的裙襬向上收攏到腰胯位置,不再垂落在雙腿之間、不再遮擋跨部,露出她穿著的黑色蕾絲內褲,內褲完整清晰可見,蕾絲紋理細緻,與睡裙同款的黑色蕾絲風格。她的姿勢和位置完全保持不變:在床墊上做側身一字馬,雙腿沿床面向左右劈開,伸直成一條水平直線平貼床面,膝蓋伸直,腳尖繃直,赤腳,兩隻腳的腳掌與腳趾輪廓清晰分明;上半身正對鏡頭,臉直視鏡頭,背部挺直,一隻手輕撐在身前的床面上。其他一切保持不變:她的銀白色長直髮、白色貓耳、紅色眼睛、安靜的表情、一朵紅玫瑰頭飾在她自己的右側、黑色蕾絲吊帶睡裙上身、胸前紅色緞帶、暗紅色荷葉邊、只有一隻手腕戴紅色髮圈,以及整個場景:黑色緞面大床、紅色荷葉邊枕頭、金色圓柱、燭台、檯燈、床底暖黃燈光、窗外深夜城市、鏡頭角度。精緻半寫實動漫插畫風格,筆觸柔和細膩。",
+   "seeds": {
+    "519285246679031": "勝者:內褲蕾絲細節完整+床底暖光保持橘紅原色+姿勢位置全鎖;100%全過",
+    "257572591606923": "淘汰:燈條漂成亮金黃",
+    "758833468873408": "淘汰:燈條漂金黃+雙腿淺V+雙腳貼床緣(爬行超時由watcher救回)"
+   },
+   "note": "兩項詮釋差異:模型把「裙襬收攏腰胯」解成「裙襬縮短成兩件式」(蕾絲上衣+內褲);目標語意達成,堆腰間畫法待使用者表態",
+   "ops": "第二張爬行23分鐘;第三張超時由watcher回收;批後重啟再上精修"
+  },
+  "finish_opt2": {
+   "chain": "x2plus -> lanczos 2672x1504 -> Z-refine 0.23 (seed 676767676701) -> anime_6B -> lanczos 3840x2160",
+   "output": "WP4KP6_shift_FINAL_seed519285246679031.png"
+  }
+ },
+ "stage_v17_shirt_swap": {
+  "goal": "鴨子坐成品換裝:黑蕾絲睡裙 -> 白色半透雪紡長袖襯衫(使用者提供服裝參考圖)",
+  "workflow": "2511 雙圖(image1=WP4KP_ducksit_FINAL 場景、image2=服裝參考;單圖模板加 42 LoadImage+161 FluxKontextImageScale,151/149 接 image2)",
+  "outfit_ref": "Desktop/contronet_test/ChatGPT Image 2026年7月11日 下午08_56_34.png(白色半透雪紡排扣長袖襯衫,產品圖)",
+  "model": "qwen-image-edit-2511-Q6_K.gguf(euler/simple, 20, CFG 2.5, denoise 1.0, shift 3.1)",
+  "prompt": "把第一張圖中鴨子坐在床上的貓耳少女的黑色蕾絲吊帶睡裙,換成第二張圖中的白色半透明雪紡長袖襯衫:翻領、正面一排白色鈕扣、長袖帶袖口,輕薄絲質半透明的材質,衣襬自然垂落蓋在大腿根部。襯衫合身自然地穿在她身上,鈕扣大致扣上,只有最上面一兩顆敞開露出鎖骨,布料隱約透出肌膚輪廓但不透出乳頭,袖子稍微寬鬆推到手腕上方,保留她手腕上的紅色髮圈在袖口外可見。其他一切保持不變:她的鴨子坐姿勢(雙膝併攏朝向鏡頭,小腿向外折在大腿兩側,赤腳的腳掌露在臀部兩旁,雙手輕放在身前大腿上)、銀白色長直髮、白色貓耳、紅色眼睛、安靜的表情、一朵紅玫瑰頭飾在她自己的右側、黑色蕾絲頸鍊、只有一隻手腕戴紅色髮圈、赤腳,以及整個場景:黑色緞面大床、紅色荷葉邊枕頭、金色圓柱、燭台、檯燈、床底暖黃燈光、窗外深夜城市、鏡頭角度。精緻半寫實動漫插畫風格,筆觸柔和細膩。",
+  "seeds": {
+   "757078450373801": "淘汰:床頭牆被改成整面夜景窗(場景重大漂移),襯衫偏不透",
+   "813691978972649": "次選:透膚最忠實,場景保持好但整體光偏亮金",
+   "801318846899852": "勝者:透膚適中+場景保真最佳(床底暖光最接近原版);頸鍊變寬蕾絲盤領(小漂移,視覺成立)"
+  },
+  "known_deviation": "三張一致把單腕紅髮圈詮釋成雙袖口紅色滾邊;視覺成立暫收,使用者要單腕版可點修",
+  "scale_lock": "透出肌膚輪廓但不透出乳頭 — 3/3 合規",
+  "finish_opt2": {
+   "chain": "x2plus -> lanczos 2672x1504 -> Z-refine 0.23 (seed 676767676701) -> anime_6B -> lanczos 3840x2160",
+   "output": "WP4KP7_shirt_FINAL_seed801318846899852.png"
+  }
+ },
+ "stage_v18_collar_leash": {
+  "goal": "①右側床形修正(不與地板融合) ②手環改水晶串珠只留左腕 ③蕾絲頸鍊→細黑皮革項圈+牽引繩+白色皮革握把",
+  "base_image": "WP4KP7_shirt_FINAL_seed801318846899852.png",
+  "model": "qwen-image-edit-2511-Q6_K.gguf(單圖編輯,euler/simple 20/2.5/1.0/shift3.1)",
+  "round_a_combined": {
+   "prompt": "對畫面中鴨子坐在床上的貓耳少女和場景做以下修改,其他一切保持不變:1. 修正畫面右側的床的形狀:床墊與床架方正端正,右側床沿有清晰的邊緣輪廓和金色床框收邊,床墊表面平整,床的右側與地板明確分隔開,有清楚的高度落差,不再歪斜、不與地板融合。2. 她兩邊的襯衫袖口都改為純白色,去掉紅色滾邊;只在她自己的左手腕(畫面右側那隻手)戴一串透明水晶串珠手鍊,圓潤的水晶珠子晶瑩剔透、反射燭光,右手腕沒有任何飾品。3. 她的黑色蕾絲頸鍊換成一條細窄的黑色皮革項圈:簡潔的細皮革頸圈貼合頸部,不寬不粗,項圈正面有一個小金屬扣環,扣著一條黑色皮革牽引繩,牽引繩從項圈自然垂落在她身前的床面上,繩子末端是一個白色皮革握把,握把放在床單上清楚可見。保持不變:她的白色半透明雪紡長袖襯衫(翻領、正面白色鈕扣、最上兩顆敞開、輕紗透膚材質、衣襬蓋大腿根)、鴨子坐姿勢(雙膝併攏朝鏡頭、小腿外折、赤腳腳掌露在臀部兩旁、雙手輕放大腿上)、銀白色長直髮、白色貓耳、紅色眼睛、安靜的表情、一朵紅玫瑰頭飾在她自己的右側、赤腳,以及場景其他一切:黑色緞面床單、紅色荷葉邊枕頭、金色圓柱、燭台、檯燈、床底暖黃燈光、窗外深夜城市、鏡頭角度。精緻半寫實動漫插畫風格,筆觸柔和細膩。",
+   "seeds": {
+    "796805682876399": "床✓項圈✓;繩中途變色+玫瑰翻側→淘汰",
+    "140006913730339": "床✓項圈✓繩+白握把✓;繩未連項圈、串珠雙腕→進B輪修",
+    "656420898437586": "雙繩幻覺(黑尾白尖貓尾狀)→淘汰"
+   },
+   "note": "床形修正 3/3 全過(模型把床重畫成方正平台床+金框收邊);串珠 0/3 錯位(#1跑到衣襬、#2雙腕)"
+  },
+  "round_b_leash_fix": {
+   "base": "collar_seed140006913730339(#A2)",
+   "prompt": "對畫面中鴨子坐在床上的貓耳少女做以下修改,其他一切保持不變:1. 黑色皮革牽引繩的上端清楚地扣在她頸部黑色皮革項圈正面的金屬扣環上:繩子從項圈的扣環垂下,沿著她身前的白襯衫外側自然垂落,經過她的手臂旁,落到床面上,與床上現有的繩身和白色皮革握把連成同一條連貫的繩子,整條繩子的路徑清楚自然,只有一條繩子。2. 移除她右手腕(畫面左側那隻手)上的水晶串珠,右手袖口是乾淨的純白色;只有她的左手腕(畫面右側那隻手)戴一串透明水晶串珠手鍊。襯衫衣襬上沒有任何珠飾。保持不變:細窄的黑色皮革項圈、床上的白色皮革握把、白色半透明雪紡長袖襯衫(翻領、白色鈕扣、透膚)、鴨子坐姿勢(雙膝併攏朝鏡頭、赤腳腳掌露在臀部兩旁、雙手輕放大腿上)、銀白色長直髮、白色貓耳、紅色眼睛、安靜的表情、一朵紅玫瑰頭飾在她自己的右側、方正的黑色大床與金色床框、紅色荷葉邊枕頭、金色圓柱、燭台、檯燈、床底暖黃燈光、窗外深夜城市、鏡頭角度。精緻半寫實動漫插畫風格,筆觸柔和細膩。",
+   "seeds": {
+    "534567222104278": "繩上黑下白變色+玫瑰翻側→淘汰",
+    "881243944188121": "勝者:繩從項圈金環沿胸前垂下連貫✓白握把✓;但串珠被全拆(含左腕)",
+    "816012948632822": "繩連上但多一段垂床外+左側多長金柱+胸口多白抹胸→淘汰"
+   }
+  },
+  "round_c_beads_add": {
+   "base": "leash_seed881243944188121(#B2)",
+   "prompt": "在畫面中鴨子坐在床上的貓耳少女的左手腕上(畫面右側那隻手,靠近觀眾右邊的手腕),戴上一串透明水晶串珠手鍊:圓潤的透明水晶珠子串成一圈,晶瑩剔透,反射溫暖的燭光,戴在白色襯衫袖口外側的手腕上,清楚可見。她的右手腕(畫面左側那隻手)保持沒有任何飾品。其他一切保持不變:細窄的黑色皮革項圈與金色扣環、扣在項圈上沿胸前垂下的黑色皮革牽引繩、床面上的繩身與白色皮革握把、白色半透明雪紡長袖襯衫與純白袖口、鴨子坐姿勢(雙膝併攏朝鏡頭、赤腳腳掌露在臀部兩旁、雙手輕放大腿上)、銀白色長直髮、白色貓耳、紅色眼睛、安靜的表情、一朵紅玫瑰頭飾在她自己的右側、赤腳、方正的黑色大床與金色床框、紅色荷葉邊枕頭、金色圓柱、燭台、檯燈、床底暖黃燈光、窗外深夜城市、鏡頭角度。精緻半寫實動漫插畫風格,筆觸柔和細膩。",
+   "seeds": {
+    "785912288045548": "雙腕+右腕糊成大串→淘汰",
+    "352518128996382": "雙腕但珠形最乾淨(左腕袖口+串珠共存自然)→拼接素材",
+    "224803663597810": "珠變雙袖口鑲鑽滾邊→淘汰"
+   },
+   "lesson": "單側腕飾 2511 文字軌三輪 0/9:成對部位飾品有強對稱先驗,錨定寫死(畫面座標+雙負向)也會鏡像"
+  },
+  "final_assembly": {
+   "method": "PIL 像素拼接:C2 為底(左腕原生袖口+水晶珠)+ B2 乾淨右腕羽化貼上(ellipse 662,368-742,424, blur 5)",
+   "file": "candidates_v18/v18_FINAL_assembly_C2xB2wrist.png",
+   "why": "對稱先驗文字軌不可解;同族生成圖對齊度高,羽化拼接零風險"
+  },
+  "ops": "C輪首張爬行25分(桌面爭用,使用者關程式後回魂);批後依鐵律6重啟再上精修",
+  "finish_opt2": {
+   "chain": "x2plus -> lanczos 2672x1504 -> Z-refine 0.23 (seed 676767676701) -> anime_6B -> lanczos 3840x2160",
+   "output": "WP4KP8_collar_FINAL_assembly.png",
+   "refine_guard": "refine prompt 寫死「只有左手腕戴水晶串珠,右手腕沒有任何飾品」防精修再對稱化;QA 必驗右腕"
+  }
+ }
+}

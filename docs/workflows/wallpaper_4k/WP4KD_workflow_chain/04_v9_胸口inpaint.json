@@ -1,0 +1,185 @@
+{
+ "10": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "wp4k_inpaint_src.png"
+  },
+  "is_changed": [
+   "da62b2a1e3447bc6aee986100e08e8f97d0673bca3d98063ba48eee30ca823e9"
+  ]
+ },
+ "30": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "wp4k_inpaint_mask.png"
+  },
+  "is_changed": [
+   "057e5b4034c3882922848783c09cf022d41460982d8d5166aeeac51fd8502231"
+  ]
+ },
+ "31": {
+  "class_type": "ImageToMask",
+  "inputs": {
+   "image": [
+    "30",
+    0
+   ],
+   "channel": "red"
+  }
+ },
+ "1": {
+  "class_type": "UNETLoader",
+  "inputs": {
+   "unet_name": "z_image_turbo_bf16.safetensors",
+   "weight_dtype": "fp8_e4m3fn_fast"
+  }
+ },
+ "2": {
+  "class_type": "ModelSamplingAuraFlow",
+  "inputs": {
+   "shift": 3.0,
+   "model": [
+    "1",
+    0
+   ]
+  }
+ },
+ "3": {
+  "class_type": "CLIPLoader",
+  "inputs": {
+   "clip_name": "qwen_3_4b.safetensors",
+   "type": "lumina2",
+   "device": "default"
+  }
+ },
+ "4": {
+  "class_type": "CLIPTextEncodeLumina2",
+  "inputs": {
+   "system_prompt": "superior",
+   "user_prompt": "高精緻半寫實動漫插畫,2.5D 厚塗質感,線條柔和自然。銀白色長直髮貓耳少女穿黑色蕾絲吊帶睡裙坐在床沿。她的胸口與腋下解剖結構自然:鎖骨線條清晰柔和,肩膀到腋窩的過渡平滑自然,腋窩有柔和的陰影凹陷,胸型在黑色蕾絲罩杯下自然對稱、柔軟圓潤,乳溝深淺自然不誇張,皮膚平滑有柔和光澤,蕾絲罩杯邊緣與红色細肩帶自然貼合胸部曲線,柔順的銀白髮絲自然垂落在肩膀與鎖骨上。溫暖燭光打光,柔和陰影,皮膚細膩,筆觸柔和精緻。",
+   "clip": [
+    "3",
+    0
+   ]
+  }
+ },
+ "5": {
+  "class_type": "ConditioningZeroOut",
+  "inputs": {
+   "conditioning": [
+    "4",
+    0
+   ]
+  }
+ },
+ "9": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "ae.safetensors"
+  }
+ },
+ "21": {
+  "class_type": "VAEEncodeTiled",
+  "inputs": {
+   "pixels": [
+    "10",
+    0
+   ],
+   "vae": [
+    "9",
+    0
+   ],
+   "tile_size": 512,
+   "overlap": 64,
+   "temporal_size": 64,
+   "temporal_overlap": 8
+  }
+ },
+ "32": {
+  "class_type": "SetLatentNoiseMask",
+  "inputs": {
+   "samples": [
+    "21",
+    0
+   ],
+   "mask": [
+    "31",
+    0
+   ]
+  }
+ },
+ "22": {
+  "class_type": "KSampler",
+  "inputs": {
+   "seed": 777000111222,
+   "steps": 8,
+   "cfg": 1.0,
+   "sampler_name": "res_multistep",
+   "scheduler": "simple",
+   "denoise": 0.5,
+   "model": [
+    "2",
+    0
+   ],
+   "positive": [
+    "4",
+    0
+   ],
+   "negative": [
+    "5",
+    0
+   ],
+   "latent_image": [
+    "32",
+    0
+   ]
+  }
+ },
+ "23": {
+  "class_type": "VAEDecodeTiled",
+  "inputs": {
+   "samples": [
+    "22",
+    0
+   ],
+   "vae": [
+    "9",
+    0
+   ],
+   "tile_size": 512,
+   "overlap": 64,
+   "temporal_size": 64,
+   "temporal_overlap": 8
+  }
+ },
+ "33": {
+  "class_type": "ImageCompositeMasked",
+  "inputs": {
+   "destination": [
+    "10",
+    0
+   ],
+   "source": [
+    "23",
+    0
+   ],
+   "x": 0,
+   "y": 0,
+   "resize_source": false,
+   "mask": [
+    "31",
+    0
+   ]
+  }
+ },
+ "26": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "33",
+    0
+   ],
+   "filename_prefix": "WP4KD_inpaint"
+  }
+ }
+}

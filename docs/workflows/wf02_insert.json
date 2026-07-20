@@ -1,0 +1,259 @@
+{
+ "9": {
+  "inputs": {
+   "filename_prefix": "i2i_mix_insert",
+   "images": [
+    "170:158",
+    0
+   ]
+  },
+  "class_type": "SaveImage",
+  "_meta": {
+   "title": "儲存圖片"
+  }
+ },
+ "41": {
+  "inputs": {
+   "image": "plate_locked_I2.png"
+  },
+  "class_type": "LoadImage",
+  "_meta": {
+   "title": "載入圖片"
+  }
+ },
+ "170:146": {
+  "inputs": {
+   "vae_name": "qwen_image_vae.safetensors"
+  },
+  "class_type": "VAELoader",
+  "_meta": {
+   "title": "載入 VAE"
+  }
+ },
+ "170:147": {
+  "inputs": {
+   "reference_latents_method": "index_timestep_zero",
+   "conditioning": [
+    "170:149",
+    0
+   ]
+  },
+  "class_type": "FluxKontextMultiReferenceLatentMethod",
+  "_meta": {
+   "title": "FluxKontext 多重參考潛在方法"
+  }
+ },
+ "170:148": {
+  "inputs": {
+   "reference_latents_method": "index_timestep_zero",
+   "conditioning": [
+    "170:151",
+    0
+   ]
+  },
+  "class_type": "FluxKontextMultiReferenceLatentMethod",
+  "_meta": {
+   "title": "FluxKontext 多重參考潛在方法"
+  }
+ },
+ "170:149": {
+  "inputs": {
+   "prompt": "",
+   "clip": [
+    "170:162",
+    0
+   ],
+   "vae": [
+    "170:146",
+    0
+   ],
+   "image1": [
+    "170:160",
+    0
+   ],
+   "image2": [
+    "202",
+    0
+   ]
+  },
+  "class_type": "TextEncodeQwenImageEditPlus",
+  "_meta": {
+   "title": "TextEncodeQwenImageEditPlus"
+  }
+ },
+ "170:151": {
+  "inputs": {
+   "prompt": "將第二張圖中的角色完整放進第一張圖的場景裡：她站在床邊的猩紅色天鵝絨地毯上，身體與臉朝向畫面左側，姿態優雅沉靜，黑色長裙裙襬自然垂落在地毯上。她的髮型、髮色、五官、紅色眼睛、黑金哥德禮服、黑色半透明面紗、紅玫瑰頭飾、高跟鞋完全以第二張圖為準，不做任何更改。第一張圖的場景、家具、透視、視角、光線完全保持不變，只加入這位角色。用場景的溫暖燭光為角色打光，在地毯上投下自然的陰影。精緻動漫插畫風格。",
+   "clip": [
+    "170:162",
+    0
+   ],
+   "vae": [
+    "170:146",
+    0
+   ],
+   "image1": [
+    "170:160",
+    0
+   ],
+   "image2": [
+    "202",
+    0
+   ]
+  },
+  "class_type": "TextEncodeQwenImageEditPlus",
+  "_meta": {
+   "title": "TextEncodeQwenImageEditPlus (Positive)"
+  }
+ },
+ "170:152": {
+  "inputs": {
+   "strength": 1.0,
+   "pre_cfg": false,
+   "model": [
+    "170:145",
+    0
+   ]
+  },
+  "class_type": "CFGNorm",
+  "_meta": {
+   "title": "CFG 正規化"
+  }
+ },
+ "170:156": {
+  "inputs": {
+   "pixels": [
+    "170:160",
+    0
+   ],
+   "vae": [
+    "170:146",
+    0
+   ]
+  },
+  "class_type": "VAEEncode",
+  "_meta": {
+   "title": "VAE 編碼"
+  }
+ },
+ "170:162": {
+  "inputs": {
+   "clip_name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+   "type": "qwen_image",
+   "device": "default"
+  },
+  "class_type": "CLIPLoader",
+  "_meta": {
+   "title": "載入 CLIP"
+  }
+ },
+ "170:169": {
+  "inputs": {
+   "seed": 580008559801588,
+   "steps": 20,
+   "cfg": 2.5,
+   "sampler_name": "euler",
+   "scheduler": "simple",
+   "denoise": 1.0,
+   "model": [
+    "170:152",
+    0
+   ],
+   "positive": [
+    "170:148",
+    0
+   ],
+   "negative": [
+    "170:147",
+    0
+   ],
+   "latent_image": [
+    "170:156",
+    0
+   ]
+  },
+  "class_type": "KSampler",
+  "_meta": {
+   "title": "KSampler"
+  }
+ },
+ "170:158": {
+  "inputs": {
+   "samples": [
+    "170:169",
+    0
+   ],
+   "vae": [
+    "170:146",
+    0
+   ]
+  },
+  "class_type": "VAEDecode",
+  "_meta": {
+   "title": "VAE 解碼"
+  }
+ },
+ "170:160": {
+  "class_type": "ImageScale",
+  "inputs": {
+   "image": [
+    "200",
+    0
+   ],
+   "upscale_method": "lanczos",
+   "width": 1216,
+   "height": 864,
+   "crop": "disabled"
+  }
+ },
+ "170:145": {
+  "inputs": {
+   "shift": 3.1,
+   "model": [
+    "170:196",
+    0
+   ]
+  },
+  "class_type": "ModelSamplingAuraFlow",
+  "_meta": {
+   "title": "模型取樣 AuraFlow"
+  }
+ },
+ "170:196": {
+  "inputs": {
+   "unet_name": "qwen-image-edit-2511-Q6_K.gguf"
+  },
+  "class_type": "UnetLoaderGGUF",
+  "_meta": {
+   "title": "Unet Loader (GGUF)"
+  }
+ },
+ "200": {
+  "class_type": "ImageCrop",
+  "inputs": {
+   "image": [
+    "41",
+    0
+   ],
+   "x": 700,
+   "y": 150,
+   "width": 720,
+   "height": 506
+  }
+ },
+ "201": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "clean_master_v1.png"
+  }
+ },
+ "202": {
+  "class_type": "FluxKontextImageScale",
+  "inputs": {
+   "image": [
+    "201",
+    0
+   ]
+  }
+ }
+}

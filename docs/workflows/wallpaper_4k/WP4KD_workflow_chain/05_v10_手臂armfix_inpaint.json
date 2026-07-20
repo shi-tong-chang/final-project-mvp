@@ -1,0 +1,185 @@
+{
+ "10": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "wp4k_armfix_src.png"
+  },
+  "is_changed": [
+   "a84167e4ed87f59debd6e941aecedbb0e208c57c479687f61c0c2f226558ac4f"
+  ]
+ },
+ "30": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "wp4k_armfix_mask.png"
+  },
+  "is_changed": [
+   "ce3376258b0b9d808743c7697e6a7c5aea50e4a6ef95a9e04c661e4c8c90460f"
+  ]
+ },
+ "31": {
+  "class_type": "ImageToMask",
+  "inputs": {
+   "image": [
+    "30",
+    0
+   ],
+   "channel": "red"
+  }
+ },
+ "1": {
+  "class_type": "UNETLoader",
+  "inputs": {
+   "unet_name": "z_image_turbo_bf16.safetensors",
+   "weight_dtype": "fp8_e4m3fn_fast"
+  }
+ },
+ "2": {
+  "class_type": "ModelSamplingAuraFlow",
+  "inputs": {
+   "shift": 3.0,
+   "model": [
+    "1",
+    0
+   ]
+  }
+ },
+ "3": {
+  "class_type": "CLIPLoader",
+  "inputs": {
+   "clip_name": "qwen_3_4b.safetensors",
+   "type": "lumina2",
+   "device": "default"
+  }
+ },
+ "4": {
+  "class_type": "CLIPTextEncodeLumina2",
+  "inputs": {
+   "system_prompt": "superior",
+   "user_prompt": "高精緻半寫實動漫插畫。少女光滑乾淨的手臂皮膚,白皙細膩,沒有任何圖案、刺青或印記,溫暖燭光下柔和的皮膚光澤,筆觸柔和自然。",
+   "clip": [
+    "3",
+    0
+   ]
+  }
+ },
+ "5": {
+  "class_type": "ConditioningZeroOut",
+  "inputs": {
+   "conditioning": [
+    "4",
+    0
+   ]
+  }
+ },
+ "9": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "ae.safetensors"
+  }
+ },
+ "21": {
+  "class_type": "VAEEncodeTiled",
+  "inputs": {
+   "pixels": [
+    "10",
+    0
+   ],
+   "vae": [
+    "9",
+    0
+   ],
+   "tile_size": 512,
+   "overlap": 64,
+   "temporal_size": 64,
+   "temporal_overlap": 8
+  }
+ },
+ "32": {
+  "class_type": "SetLatentNoiseMask",
+  "inputs": {
+   "samples": [
+    "21",
+    0
+   ],
+   "mask": [
+    "31",
+    0
+   ]
+  }
+ },
+ "22": {
+  "class_type": "KSampler",
+  "inputs": {
+   "seed": 313131313101,
+   "steps": 8,
+   "cfg": 1.0,
+   "sampler_name": "res_multistep",
+   "scheduler": "simple",
+   "denoise": 0.5,
+   "model": [
+    "2",
+    0
+   ],
+   "positive": [
+    "4",
+    0
+   ],
+   "negative": [
+    "5",
+    0
+   ],
+   "latent_image": [
+    "32",
+    0
+   ]
+  }
+ },
+ "23": {
+  "class_type": "VAEDecodeTiled",
+  "inputs": {
+   "samples": [
+    "22",
+    0
+   ],
+   "vae": [
+    "9",
+    0
+   ],
+   "tile_size": 512,
+   "overlap": 64,
+   "temporal_size": 64,
+   "temporal_overlap": 8
+  }
+ },
+ "33": {
+  "class_type": "ImageCompositeMasked",
+  "inputs": {
+   "destination": [
+    "10",
+    0
+   ],
+   "source": [
+    "23",
+    0
+   ],
+   "x": 0,
+   "y": 0,
+   "resize_source": false,
+   "mask": [
+    "31",
+    0
+   ]
+  }
+ },
+ "26": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "33",
+    0
+   ],
+   "filename_prefix": "WP4KD_armfix"
+  }
+ }
+}

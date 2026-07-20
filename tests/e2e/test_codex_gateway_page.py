@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+import base64
+import json
 import socket
 import threading
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager
+from email.parser import BytesParser
+from email.policy import default
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from app.core.gateway_settings import GatewaySettings
 from app.gateway_main import create_gateway_app
@@ -14,10 +19,15 @@ from app.services.codex_gateway.client import (
     CodexThread,
     CodexTurn,
 )
-from playwright.sync_api import Page, sync_playwright
+from playwright.sync_api import Page, Request, Route, sync_playwright
 from uvicorn import Config, Server
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+ONE_PIXEL_PNG = base64.b64decode(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk"
+    "YAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+)
+BROWSER_RUN_ID = f"run_{'a' * 32}"
 
 
 class BrowserFakeCodexClient:
@@ -48,6 +58,243 @@ class BrowserFakeCodexClient:
 
     async def close(self) -> None:
         return
+
+
+def _multipart_parts(request: Request) -> dict[str, tuple[str | None, bytes]]:
+    content_type = request.headers.get("content-type", "")
+    body = request.post_data_buffer or b""
+    message = BytesParser(policy=default).parsebytes(
+        (f"Content-Type: {content_type}\r\nMIME-Version: 1.0\r\n\r\n").encode() + body
+    )
+    parsed_parts: dict[str, tuple[str | None, bytes]] = {}
+    for part in message.iter_parts():
+        if part.get_content_disposition() != "form-data":
+            continue
+        name = part.get_param("name", header="content-disposition")
+        if not isinstance(name, str):
+            continue
+        raw_filename = part.get_filename()
+        filename = raw_filename if isinstance(raw_filename, str) else None
+        raw_payload = part.get_payload(decode=True)
+        payload = raw_payload if isinstance(raw_payload, bytes) else b""
+        parsed_parts[name] = (filename, payload)
+    return parsed_parts
+
+
+def _json_object(request: Request) -> dict[str, object]:
+    payload = request.post_data_json
+    if not isinstance(payload, dict):
+        raise AssertionError("browser mock 預期 JSON object request")
+    normalized: dict[str, object] = {}
+    for key, value in payload.items():
+        if not isinstance(key, str):
+            raise AssertionError("browser mock JSON key 必須是字串")
+        normalized[key] = value
+    return normalized
+
+
+class StoryboardWorkflowRouteMock:
+    """以同源 route 模擬候選選定後才執行 4K 的 typed API。"""
+
+    def __init__(self) -> None:
+        self.create_requests: list[dict[str, object]] = []
+        self.selection_requests: list[dict[str, object]] = []
+        self.upscale_requests: list[dict[str, object]] = []
+        self.selected_candidate_id: str | None = None
+        self.phase = "compose"
+        self.fail_next_create = False
+        self.conflict_next_upscale = False
+        self.transient_poll_failures_remaining = 0
+        self.poll_request_count = 0
+
+    @staticmethod
+    def _candidate(candidate_number: int, status: str) -> dict[str, object]:
+        candidate_id = f"cand_{candidate_number:032x}"
+        base_path = (
+            f"/api/v1/gateway/workflows/storyboards/{BROWSER_RUN_ID}/"
+            f"candidates/{candidate_id}"
+        )
+        is_completed = status == "completed"
+        return {
+            "candidate_id": candidate_id,
+            "seed": 7100 + candidate_number,
+            "status": status,
+            "image_url": f"{base_path}/image" if is_completed else None,
+            "download_url": (f"{base_path}/download" if is_completed else None),
+            "error": None,
+        }
+
+    def _run_payload(
+        self,
+        status: str,
+        *,
+        candidate_status: str = "completed",
+        upscale_status: str = "idle",
+    ) -> dict[str, object]:
+        upscale_base = f"/api/v1/gateway/workflows/storyboards/{BROWSER_RUN_ID}/upscale"
+        upscale_completed = upscale_status == "completed"
+        return {
+            "run_id": BROWSER_RUN_ID,
+            "status": status,
+            "candidates": [
+                self._candidate(index, candidate_status) for index in range(1, 4)
+            ],
+            "selected_candidate_id": self.selected_candidate_id,
+            "upscale": {
+                "status": upscale_status,
+                "image_url": (f"{upscale_base}/image" if upscale_completed else None),
+                "download_url": (
+                    f"{upscale_base}/download" if upscale_completed else None
+                ),
+                "error": None,
+            },
+        }
+
+    @staticmethod
+    def _fulfill_json(
+        route: Route,
+        payload: dict[str, object],
+        *,
+        status: int = 200,
+    ) -> None:
+        route.fulfill(
+            status=status,
+            content_type="application/json",
+            body=json.dumps(payload),
+        )
+
+    def handle(self, route: Route) -> None:
+        request = route.request
+        path = urlsplit(request.url).path
+        method = request.method
+
+        if path.endswith(("/image", "/download")):
+            route.fulfill(
+                status=200,
+                content_type="image/png",
+                body=ONE_PIXEL_PNG,
+            )
+            return
+
+        if method == "POST" and path.endswith("/workflows/storyboards"):
+            if self.fail_next_create:
+                self.fail_next_create = False
+                self._fulfill_json(
+                    route,
+                    {
+                        "error": {
+                            "code": "WORKFLOW_UNAVAILABLE",
+                            "message": "ComfyUI 目前無法連線。",
+                        }
+                    },
+                    status=503,
+                )
+                return
+            parts = _multipart_parts(request)
+            workflow_request = json.loads(parts["request"][1].decode())
+            self.create_requests.append(
+                {
+                    "request": workflow_request,
+                    "scene_filename": parts["scene_image"][0],
+                    "character_filename": parts["character_image"][0],
+                }
+            )
+            self.phase = "compose"
+            self.selected_candidate_id = None
+            self._fulfill_json(
+                route,
+                self._run_payload(
+                    "queued",
+                    candidate_status="queued",
+                ),
+                status=202,
+            )
+            return
+
+        if method == "GET" and path.endswith(
+            f"/workflows/storyboards/{BROWSER_RUN_ID}"
+        ):
+            self.poll_request_count += 1
+            if self.transient_poll_failures_remaining > 0:
+                self.transient_poll_failures_remaining -= 1
+                self._fulfill_json(
+                    route,
+                    {
+                        "error": {
+                            "code": "WORKFLOW_TEMPORARY_FAILURE",
+                            "message": "暫時無法取得工作進度。",
+                        }
+                    },
+                    status=503,
+                )
+                return
+            if self.phase == "upscale":
+                self._fulfill_json(
+                    route,
+                    self._run_payload(
+                        "completed",
+                        upscale_status="completed",
+                    ),
+                )
+            else:
+                self._fulfill_json(
+                    route,
+                    self._run_payload("awaiting_selection"),
+                )
+            return
+
+        if method == "POST" and path.endswith(
+            f"/workflows/storyboards/{BROWSER_RUN_ID}/selection"
+        ):
+            payload = _json_object(request)
+            self.selection_requests.append(payload)
+            candidate_id = payload.get("candidate_id")
+            if not isinstance(candidate_id, str):
+                raise AssertionError("selection 缺少 candidate_id")
+            self.selected_candidate_id = candidate_id
+            self._fulfill_json(
+                route,
+                self._run_payload("completed"),
+            )
+            return
+
+        if method == "POST" and path.endswith(
+            f"/workflows/storyboards/{BROWSER_RUN_ID}/upscale"
+        ):
+            payload = _json_object(request)
+            if payload.get("expected_candidate_id") != self.selected_candidate_id:
+                raise AssertionError("4K request 必須鎖定 server 已選候選")
+            self.upscale_requests.append(
+                {
+                    **payload,
+                    "server_selected_candidate_id": self.selected_candidate_id,
+                }
+            )
+            self.phase = "upscale"
+            if self.conflict_next_upscale:
+                self.conflict_next_upscale = False
+                self._fulfill_json(
+                    route,
+                    {
+                        "error": {
+                            "code": "WORKFLOW_UPSCALE_ALREADY_ACTIVE",
+                            "message": "4K 工作已在處理中。",
+                        }
+                    },
+                    status=409,
+                )
+                return
+            self._fulfill_json(
+                route,
+                self._run_payload(
+                    "upscaling",
+                    upscale_status="queued",
+                ),
+                status=202,
+            )
+            return
+
+        route.fulfill(status=404, body="not found")
 
 
 @contextmanager
@@ -202,6 +449,205 @@ def test_gateway_page_style_showcase_prompt_copy_and_responsive_layout(
 
         assert desktop_screenshot.stat().st_size > 20_000
         assert mobile_screenshot.stat().st_size > 10_000
+        assert fake.thread_count == 0
+        assert fake.turn_count == 0
+        context.close()
+        browser.close()
+
+
+def test_storyboard_workflow_selects_one_candidate_before_4k_and_handles_error(
+    tmp_path: Path,
+) -> None:
+    fake = BrowserFakeCodexClient()
+    workflow = StoryboardWorkflowRouteMock()
+    scene_path = tmp_path / "scene.png"
+    character_path = tmp_path / "character-front.png"
+    replacement_scene_path = tmp_path / "replacement-scene.png"
+    scene_path.write_bytes(ONE_PIXEL_PNG)
+    character_path.write_bytes(ONE_PIXEL_PNG)
+    replacement_scene_path.write_bytes(ONE_PIXEL_PNG)
+
+    with (
+        _run_gateway_server(fake) as base_url,
+        sync_playwright() as playwright,
+    ):
+        browser = playwright.chromium.launch(headless=True)
+        context = browser.new_context(
+            viewport={"width": 1280, "height": 900},
+            locale="zh-TW",
+        )
+        page = context.new_page()
+        page.route(
+            "**/api/v1/gateway/workflows/**",
+            workflow.handle,
+        )
+        page.goto(base_url, wait_until="networkidle")
+        page.get_by_role("tab", name="生成分鏡").click()
+
+        composition_prompt = (
+            "把角色放進場景左側，保留角色五官、服裝與場景構圖，"
+            "讓角色受光方向與場景一致。"
+        )
+        page.locator("#storyboard-scene-file").set_input_files(scene_path)
+        page.locator("#storyboard-character-file").set_input_files(character_path)
+        page.locator("#storyboard-prompt").fill(composition_prompt)
+        page.locator("#storyboard-candidate-count").select_option("3")
+
+        assert page.locator("#storyboard-upscale-form").is_hidden()
+        page.locator("#generate-storyboard-button").click()
+        assert page.locator("#generate-storyboard-button").is_disabled()
+        page.get_by_text(
+            "候選已完成，請逐張檢查並明確選定一張。",
+            exact=True,
+        ).wait_for()
+
+        assert len(workflow.create_requests) == 1
+        created = workflow.create_requests[0]
+        assert created["request"] == {
+            "prompt": composition_prompt,
+            "candidate_count": 3,
+        }
+        assert created["scene_filename"] == "scene.png"
+        assert created["character_filename"] == "character-front.png"
+
+        candidate_cards = page.locator("#storyboard-candidate-grid .candidate-card")
+        assert candidate_cards.count() == 3
+        assert page.locator("#confirm-storyboard-button").is_disabled()
+        assert page.locator("#storyboard-upscale-form").is_hidden()
+
+        candidate_cards.nth(0).click()
+        assert not page.locator("#confirm-storyboard-button").is_disabled()
+        first_candidate_id = f"cand_{1:032x}"
+        assert f"{first_candidate_id}/image" in (
+            page.locator("#storyboard-result-image").get_attribute("src") or ""
+        )
+        assert page.locator("#storyboard-upscale-form").is_hidden()
+
+        page.locator("#confirm-storyboard-button").click()
+        page.get_by_text(
+            "已確認此候選；現在可以填寫 4K 細節描述。",
+            exact=True,
+        ).wait_for()
+        assert workflow.selection_requests == [{"candidate_id": first_candidate_id}]
+        assert page.locator("#storyboard-upscale-form").is_visible()
+        assert (
+            page.locator("#upscale-refine-prompt").input_value() == composition_prompt
+        )
+        assert not page.locator("#upscale-storyboard-button").is_disabled()
+
+        candidate_cards.nth(1).click()
+        selected_candidate_id = f"cand_{2:032x}"
+        assert page.locator("#storyboard-upscale-form").is_hidden()
+        assert not page.locator("#confirm-storyboard-button").is_disabled()
+        page.locator("#confirm-storyboard-button").click()
+        page.get_by_text(
+            "已確認此候選；現在可以填寫 4K 細節描述。",
+            exact=True,
+        ).wait_for()
+        assert workflow.selection_requests == [
+            {"candidate_id": first_candidate_id},
+            {"candidate_id": selected_candidate_id},
+        ]
+        assert page.locator("#storyboard-upscale-form").is_visible()
+
+        refine_prompt = (
+            "完整保留目前角色的臉、服裝與站姿，以及場景的構圖和光線；"
+            "柔化髮絲並維持自然接觸陰影。"
+        )
+        page.locator("#upscale-refine-prompt").fill(refine_prompt)
+        workflow.conflict_next_upscale = True
+        workflow.transient_poll_failures_remaining = 1
+        poll_count_before_upscale = workflow.poll_request_count
+        page.locator("#upscale-storyboard-button").click()
+        assert page.locator("#upscale-storyboard-button").is_disabled()
+        page.get_by_text(
+            "4K 工作狀態已變更，正在重新查詢既有工作；不會重複建立工作。",
+            exact=True,
+        ).wait_for()
+        page.get_by_text(
+            "進度連線暫時中斷，1 秒後重試（1 / 5）；既有工作仍保留，請勿重新送出。",
+            exact=True,
+        ).wait_for()
+        assert page.locator("#storyboard-scene-file").is_disabled()
+        assert page.locator("#storyboard-character-file").is_disabled()
+        assert page.locator("#storyboard-prompt").is_disabled()
+        assert page.locator("#storyboard-candidate-count").is_disabled()
+        assert page.locator("#generate-storyboard-button").is_disabled()
+        assert all(
+            page.locator('input[name="storyboard-candidate"]').nth(index).is_disabled()
+            for index in range(3)
+        )
+        assert len(workflow.create_requests) == 1
+        assert len(workflow.upscale_requests) == 1
+        page.get_by_text(
+            "4K 定稿完成，可在右側預覽或下載。",
+            exact=True,
+        ).wait_for()
+
+        assert workflow.upscale_requests == [
+            {
+                "refine_prompt": refine_prompt,
+                "expected_candidate_id": selected_candidate_id,
+                "server_selected_candidate_id": selected_candidate_id,
+            }
+        ]
+        assert "candidate_id" not in workflow.upscale_requests[0]
+        assert workflow.poll_request_count - poll_count_before_upscale == 2
+        result_image_src = (
+            page.locator("#storyboard-result-image").get_attribute("src") or ""
+        )
+        assert result_image_src.endswith(
+            f"/api/v1/gateway/workflows/storyboards/{BROWSER_RUN_ID}/upscale/image"
+        )
+        upscale_download = (
+            page.locator("#upscale4k-download-link").get_attribute("href") or ""
+        )
+        assert upscale_download.endswith(
+            f"/api/v1/gateway/workflows/storyboards/{BROWSER_RUN_ID}/upscale/download"
+        )
+        assert (
+            "3840 × 2160" in page.locator("#storyboard-result-description").inner_text()
+        )
+        assert (
+            "絕不自動放大其他候選"
+            in page.locator("#storyboard-upscale-form").inner_text()
+        )
+        assert (
+            "非 16:9 來源會置中裁切"
+            in page.locator("#storyboard-upscale-form").inner_text()
+        )
+        assert not page.locator("#storyboard-scene-file").is_disabled()
+        assert not page.locator("#storyboard-prompt").is_disabled()
+        assert not page.locator("#generate-storyboard-button").is_disabled()
+        assert all(
+            page.locator('input[name="storyboard-candidate"]').nth(index).is_disabled()
+            for index in range(3)
+        )
+
+        page.set_viewport_size({"width": 390, "height": 844})
+        candidate_positions = candidate_cards.evaluate_all(
+            """
+            (items) => items.map((item) => {
+              const rect = item.getBoundingClientRect();
+              return { top: rect.top, bottom: rect.bottom, left: rect.left };
+            })
+            """
+        )
+        assert candidate_positions[1]["top"] > candidate_positions[0]["bottom"]
+        assert abs(candidate_positions[1]["left"] - candidate_positions[0]["left"]) < 2
+        _assert_no_horizontal_overflow(page)
+
+        workflow.fail_next_create = True
+        page.locator("#storyboard-scene-file").set_input_files(replacement_scene_path)
+        assert page.locator("#storyboard-upscale-form").is_hidden()
+        page.locator("#generate-storyboard-button").click()
+        page.get_by_text("ComfyUI 目前無法連線。", exact=True).wait_for()
+        assert not page.locator("#generate-storyboard-button").is_disabled()
+        generation_status = page.locator("#storyboard-generation-status")
+        assert generation_status.get_attribute("role") == "status"
+        assert generation_status.get_attribute("aria-live") == "polite"
+        assert generation_status.get_attribute("data-kind") == "error"
+
         assert fake.thread_count == 0
         assert fake.turn_count == 0
         context.close()

@@ -1,0 +1,40 @@
+{
+ "9":  {"class_type": "SaveImage", "inputs": {"filename_prefix": "dual_char/dual_A", "images": ["170:158", 0]}},
+
+ "41": {"class_type": "LoadImage", "inputs": {"image": "scene_content.png"}},
+ "42": {"class_type": "LoadImage", "inputs": {"image": "ref_edri_front.png"}},
+ "43": {"class_type": "LoadImage", "inputs": {"image": "ref_marco_front.png"}},
+
+ "170:160": {"class_type": "FluxKontextImageScale", "inputs": {"image": ["41", 0]}},
+ "171":     {"class_type": "FluxKontextImageScale", "inputs": {"image": ["42", 0]}},
+ "172":     {"class_type": "FluxKontextImageScale", "inputs": {"image": ["43", 0]}},
+
+ "170:146": {"class_type": "VAELoader", "inputs": {"vae_name": "qwen_image_vae.safetensors"}},
+ "170:162": {"class_type": "CLIPLoader", "inputs": {"clip_name": "qwen_2.5_vl_7b_fp8_scaled.safetensors", "type": "qwen_image", "device": "default"}},
+ "170:196": {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": "qwen-image-edit-2511-Q6_K.gguf"}},
+ "170:145": {"class_type": "ModelSamplingAuraFlow", "inputs": {"shift": 3.1, "model": ["170:196", 0]}},
+ "170:152": {"class_type": "CFGNorm", "inputs": {"strength": 1.0, "pre_cfg": false, "model": ["170:145", 0]}},
+
+ "170:151": {"class_type": "TextEncodeQwenImageEditPlus", "inputs": {
+   "prompt": "把兩位公爵加入這片奇幻山谷場景,畫面中總共只有兩個人。場景的地形、樹木、溪流、岩壁、金色陽光和鏡頭視角保持不變。1. 圖三的MARCO公爵(黑色後梳短髮、絡腮山羊鬍、粗獷嚴肅面孔、黑色毛皮領大氅、暗紅色內襯、金色鎧甲肩片)站在畫面左側的大樹旁,雙手緊握一把長木柄的巨大伐木斧頭,斧柄頂端有一片寬大鋒利的楔形鐵製斧刃,他正掄起斧頭把斧刃劈向樹幹,身體前傾發力,樹幹上已有幾道砍痕與木屑飛濺。2. 圖二的EDRI公爵(黑色微捲中長髮、年輕俊美無鬍鬚的面孔、深紫黑色帶鳶尾花紋刺繡的及膝長外袍與兜帽披風、白色襯衫、紫色馬甲)在畫面右側溪流旁的草地上單膝蹲下,一手扶著一株剛種下的小樹苗,另一手用金屬澆水壺往樹苗根部澆水,地上有新翻的泥土。3. 兩人的臉、髮型、服裝、配飾嚴格按照各自參考圖繪製,不得混合或互換兩人的任何特徵:MARCO全身只穿黑色與暗紅色,不穿任何紫色衣物;EDRI是兩人中唯一穿紫色的,他沒有毛皮領,下巴光滑完全沒有鬍鬚。MARCO比EDRI更高大壯碩。兩人全身完整入鏡,大小符合場景透視與真實人體比例。整體統一為精緻奇幻動漫插畫風格,兩人的光影與場景的金色陽光方向一致。",
+   "clip": ["170:162", 0], "vae": ["170:146", 0],
+   "image1": ["170:160", 0], "image2": ["171", 0], "image3": ["172", 0]}},
+ "170:149": {"class_type": "TextEncodeQwenImageEditPlus", "inputs": {
+   "prompt": "",
+   "clip": ["170:162", 0], "vae": ["170:146", 0],
+   "image1": ["170:160", 0], "image2": ["171", 0], "image3": ["172", 0]}},
+
+ "170:148": {"class_type": "FluxKontextMultiReferenceLatentMethod", "inputs": {"reference_latents_method": "index_timestep_zero", "conditioning": ["170:151", 0]}},
+ "170:147": {"class_type": "FluxKontextMultiReferenceLatentMethod", "inputs": {"reference_latents_method": "index_timestep_zero", "conditioning": ["170:149", 0]}},
+
+ "170:156": {"class_type": "VAEEncode", "inputs": {"pixels": ["170:160", 0], "vae": ["170:146", 0]}},
+
+ "170:169": {"class_type": "KSampler", "inputs": {
+   "seed": 7001, "steps": 20, "cfg": 2.5,
+   "sampler_name": "euler", "scheduler": "simple", "denoise": 1.0,
+   "model": ["170:152", 0],
+   "positive": ["170:148", 0], "negative": ["170:147", 0],
+   "latent_image": ["170:156", 0]}},
+
+ "170:158": {"class_type": "VAEDecode", "inputs": {"samples": ["170:169", 0], "vae": ["170:146", 0]}}
+}

@@ -1,0 +1,3 @@
+# Workflow adapters pin the exact file bytes with SHA-256.
+docs/workflows/wf_dual_B1.json text eol=lf
+docs/workflows/wf10_upscale_opt2.json text eol=lf

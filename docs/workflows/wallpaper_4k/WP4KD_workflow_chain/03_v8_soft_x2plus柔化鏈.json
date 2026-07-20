@@ -1,0 +1,191 @@
+{
+ "10": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "wp4k_direct_src.png"
+  },
+  "is_changed": [
+   "ddb294a52d9451022a6b316f75ca6a385d3bfe14a4ca9d9ac665599b7779bb72"
+  ]
+ },
+ "11": {
+  "class_type": "UpscaleModelLoader",
+  "inputs": {
+   "model_name": "RealESRGAN_x2plus.pth"
+  }
+ },
+ "12": {
+  "class_type": "ImageUpscaleWithModel",
+  "inputs": {
+   "upscale_model": [
+    "11",
+    0
+   ],
+   "image": [
+    "10",
+    0
+   ]
+  }
+ },
+ "20": {
+  "class_type": "ImageScale",
+  "inputs": {
+   "image": [
+    "12",
+    0
+   ],
+   "upscale_method": "lanczos",
+   "width": 2672,
+   "height": 1504,
+   "crop": "center"
+  }
+ },
+ "1": {
+  "class_type": "UNETLoader",
+  "inputs": {
+   "unet_name": "z_image_turbo_bf16.safetensors",
+   "weight_dtype": "fp8_e4m3fn_fast"
+  }
+ },
+ "2": {
+  "class_type": "ModelSamplingAuraFlow",
+  "inputs": {
+   "shift": 3.0,
+   "model": [
+    "1",
+    0
+   ]
+  }
+ },
+ "3": {
+  "class_type": "CLIPLoader",
+  "inputs": {
+   "clip_name": "qwen_3_4b.safetensors",
+   "type": "lumina2",
+   "device": "default"
+  }
+ },
+ "4": {
+  "class_type": "CLIPTextEncodeLumina2",
+  "inputs": {
+   "system_prompt": "superior",
+   "user_prompt": "高精緻半寫實動漫插畫,2.5D 厚塗質感,線條柔和自然。一位銀白色長直髮貓耳少女,白色貓耳,紅色眼睛,柔順如絲的銀白長髮自然垂落,帶著柔和的光澤,髮絲柔軟蓬鬆。頭髮上有黑色緞帶蝴蝶結與紅玫瑰,穿黑色蕾絲吊帶睡裙、暗紅色荷葉邊、蕾絲臂袖,沒有戴耳環,赤腳優雅地坐在黑色緞面大床邊緣,雙腿修長。黑色緞面床單泛柔和光澤,紅色緞面荷葉邊枕頭,暗紅色綢緞床罩垂落床沿,床底透出溫暖的橙黃色氛圍燈光映在紅色地毯與地板上。金色圓柱、燭台燭光、床頭暖黃檯燈、紅玫瑰花瓶,窗外深夜城市燈火。溫暖燭光主光源,深邃陰影,電影感打光,柔和細膩的皮膚與緞面高光,整體筆觸柔和精緻。",
+   "clip": [
+    "3",
+    0
+   ]
+  }
+ },
+ "5": {
+  "class_type": "ConditioningZeroOut",
+  "inputs": {
+   "conditioning": [
+    "4",
+    0
+   ]
+  }
+ },
+ "9": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "ae.safetensors"
+  }
+ },
+ "21": {
+  "class_type": "VAEEncodeTiled",
+  "inputs": {
+   "pixels": [
+    "20",
+    0
+   ],
+   "vae": [
+    "9",
+    0
+   ],
+   "tile_size": 512,
+   "overlap": 64,
+   "temporal_size": 64,
+   "temporal_overlap": 8
+  }
+ },
+ "22": {
+  "class_type": "KSampler",
+  "inputs": {
+   "seed": 424242424301,
+   "steps": 8,
+   "cfg": 1.0,
+   "sampler_name": "res_multistep",
+   "scheduler": "simple",
+   "denoise": 0.2,
+   "model": [
+    "2",
+    0
+   ],
+   "positive": [
+    "4",
+    0
+   ],
+   "negative": [
+    "5",
+    0
+   ],
+   "latent_image": [
+    "21",
+    0
+   ]
+  }
+ },
+ "23": {
+  "class_type": "VAEDecodeTiled",
+  "inputs": {
+   "samples": [
+    "22",
+    0
+   ],
+   "vae": [
+    "9",
+    0
+   ],
+   "tile_size": 512,
+   "overlap": 64,
+   "temporal_size": 64,
+   "temporal_overlap": 8
+  }
+ },
+ "24": {
+  "class_type": "ImageUpscaleWithModel",
+  "inputs": {
+   "upscale_model": [
+    "11",
+    0
+   ],
+   "image": [
+    "23",
+    0
+   ]
+  }
+ },
+ "25": {
+  "class_type": "ImageScale",
+  "inputs": {
+   "image": [
+    "24",
+    0
+   ],
+   "upscale_method": "lanczos",
+   "width": 3840,
+   "height": 2160,
+   "crop": "center"
+  }
+ },
+ "26": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "25",
+    0
+   ],
+   "filename_prefix": "WP4KD_soft"
+  }
+ }
+}

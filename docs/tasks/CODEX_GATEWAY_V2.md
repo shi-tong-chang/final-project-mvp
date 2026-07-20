@@ -1,6 +1,10 @@
 # Storyboard Gateway V2 本機工作室任務單
 
 > 狀態：角色風格櫥窗與自動驗證完成；正式風格圖片待使用者提供。
+> 本文件記錄已完成的展示里程碑；其中「不接 ComfyUI／不生成圖片」的
+> 邊界只適用於該里程碑。2026-07-21 起的單角色分鏡合成與選定後 4K
+> 接線，以 `STORYBOARD_WORKFLOW_INTEGRATION.md` 與 `PROJECT_SPEC.md`
+> 為準。
 > 使用者於 2026-07-20 明確啟動此封存後獨立工具里程碑。
 > 本任務不是 Phase 2 的 LLM Planner、不是 AIPE Worker Adapter，也不恢復
 > 已封存的 ComfyUI 產品施工。

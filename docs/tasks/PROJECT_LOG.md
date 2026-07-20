@@ -287,3 +287,203 @@
   - 由使用者在一般 WSL shell 設定 `user.name`、stage、執行 staged
     whitespace check，並建立 `chore: establish initial MVP baseline`。
   - 重新開啟 workspace 後驗證 commit 與 clean worktree，再開始功能。
+
+## 2026-07-20 16:04 UTC（2026-07-21 00:04 Asia/Taipei）— 合成與 4K workflow 文件整理
+
+- **目的**：整理使用者提供的「人物×場景合成與 4K 放大」技術快照，
+  移除不可移植的舊路徑，並精確盤點同資料夾附件與缺件。
+- **執行內容**：
+  - 完整讀取 483 行參考文件，盤點 `docs/workflows/` 的六份 workflow
+    JSON 與 Windows `Zone.Identifier` 旁檔。
+  - 實讀所有 JSON 的節點、模型、server input、seed、尺寸與輸出 prefix；
+    區分現役主流程、選用輔助與範圍外工作流。
+  - 把現有附件改成同資料夾 Markdown 相對連結；移除舊 monorepo、個人
+    home 與 Windows 使用者絕對路徑。
+  - 新增路徑規範、現役附件速查、server input、模型、節點版本與缺件
+    分級清單；修正「附錄全數存在」的不實敘述。
+  - 保留原有配方、逐字 prompt、seed、實測陷阱與歷史時間線，沒有修改
+    workflow JSON。
+- **修改檔案**：
+  - `docs/workflows/REF_人物場景合成與4K放大.md`
+  - `docs/tasks/PROJECT_LOG.md`
+- **重要命令**：
+  - `find`／`file`／`wc`／`rg` 路徑與附件盤點。
+  - Python `json` 解析、node reference 與 Markdown link 驗證。
+  - `.venv/bin/ruff format --check .`
+  - `.venv/bin/ruff check .`
+  - `.venv/bin/mypy backend tests`
+  - `node --check frontend/gateway/app.js`
+  - `git diff --check`
+- **驗證結果**：
+  - 六份 JSON 全部解析成功：wf02=26 nodes、wf03=5、wf10=17、
+    dual B1=17、dual B2=17、w0=25；node reference 零缺漏。
+  - 文件 19 個 Markdown 相對連結全部存在；沒有舊反斜線路徑、個人
+    home、`/mnt/c/Users` 路徑或行尾空白。
+  - Ruff=`20 files already formatted / All checks passed`；
+    mypy=`20 source files / no issues`；Node syntax 與 tracked diff check
+    PASS。
+- **發現事項**：
+  - 單人合成、雙人兩輪、選用去背與 4K 放大的現役 workflow JSON 已齊。
+  - 至少缺 8 份歷史／備份 workflow，但都不影響現役主流程；wf02 的
+    Lightning 4-step 分支缺 LoRA 與完整接線，不能視為可用快速版。
+  - 真正阻擋未來一鍵安裝的是 ComfyUI/custom-node commit 與模型來源、
+    revision、SHA-256、授權及安裝位置，不是主 workflow JSON。
+  - `wf_w0_spike.json` 是單獨角色生成，明確屬本文範圍外；六個
+    `Zone.Identifier` 旁檔不是工作流，本輪未擅自刪除。
+- **下一步**：
+  - 請使用者優先提供模型／custom-node 安裝資料、兩份 manifest 與各一組
+    合成／4K 已驗證輸入輸出。
+  - 確認是否保留 Lightning 快速版與完整歷史血統；不需要時可不補歷史
+    JSON、舊產物與個人腳本。
+
+## 2026-07-20 19:07 UTC（2026-07-21 03:07 Asia/Taipei）— 單角色分鏡候選與選定後 4K 接線
+
+- **目的**：把「場景圖＋單一角色正面參考圖」合成分鏡候選，並把只有
+  使用者明確選定的單一候選送入 4K，接進既有本機前端。
+- **執行內容**：
+  - 新增 loopback-only ComfyUI client、固定 workflow adapter、圖片安全
+    正規化、strict HTTP schema、同源圖片 endpoint 與單一 GPU worker。
+  - 合成採 `wf_dual_B1.json` 的單角色第一輪結構，避開 `wf02_insert`
+    針對特定 plate 寫死的裁框；4K 採 `wf10_upscale_opt2.json`。
+  - 每次只在 graph 深拷貝中注入 server filename、受控 prompt guard、
+    server seed 與唯一 output prefix；沒有修改 workflow 正本。
+  - 前端改為上傳兩圖、建立 1–3 張候選、輪詢、人工選片、確認後顯示 4K
+    表單，以及同源預覽／下載；未選定時前後端都拒絕放大。
+  - 圖片只接受 PNG／JPEG／WebP，限制檔案、尺寸與像素；解碼後重新輸出
+    無 metadata RGB PNG，避免原始檔名、EXIF 或內嵌 graph 外洩。
+  - 更新產品契約、任務文件、環境範例、README 與 workflow 參考文件，
+    封存 Gateway V2 的舊「不接 ComfyUI」里程碑邊界。
+- **修改檔案**：
+  - `backend/app/gateway_main.py`
+  - `backend/app/core/workflow_settings.py`
+  - `backend/app/schemas/api/workflows.py`
+  - `backend/app/api/routes/workflows.py`
+  - `backend/app/services/workflows/`
+  - `frontend/gateway/index.html`
+  - `frontend/gateway/app.js`
+  - `frontend/gateway/styles.css`
+  - `tests/test_storyboard_workflows.py`
+  - `tests/e2e/test_codex_gateway_page.py`
+  - `pyproject.toml`、`uv.lock`、`.env.example`
+  - `AGENTS.md`、`README.md`、`docs/PROJECT_SPEC.md`
+  - `docs/tasks/CODEX_GATEWAY_V2.md`
+  - `docs/tasks/STORYBOARD_WORKFLOW_INTEGRATION.md`
+  - `docs/README_repro.md`
+  - `docs/workflows/REF_人物場景合成與4K放大.md`
+- **重要命令**：
+  - `.venv/bin/pytest -q`
+  - `.venv/bin/ruff format --check .`
+  - `.venv/bin/ruff check .`
+  - `.venv/bin/mypy backend tests`
+  - `node --check frontend/gateway/app.js`
+  - `uv lock --check`
+  - `uv sync --locked --check`
+  - `git diff --check`
+  - Playwright desktop／390px workflow visual smoke。
+- **驗證結果**：
+  - pytest=`18 passed, 1 known Starlette/httpx deprecation warning`。
+  - Ruff format/check、mypy（29 files）、Node syntax、uv lock/sync 與
+    whitespace check 全部 PASS。
+  - Fake Comfy API 完整驗證：上傳兩圖 → 候選 → 未選定 4K 回 409 →
+    選定單一候選 → wf10 → 3840×2160 同源圖片與下載。
+  - Browser E2E=`2 passed`；驗證三候選只送選定項目進 4K、503 恢復、
+    Codex thread／turn 皆為零與 390px 無水平溢位。
+  - 外部 ComfyUI 未啟動、未修改；loopback status smoke 正確回
+    `unavailable`，Gateway 首頁與 catalog 仍可用。
+- **發現事項**：
+  - `wf02_insert` 已修正為 18 nodes，但固定裁框仍不適合任意上傳場景；
+    產品用 B1 作單角色通用模板是刻意選擇。
+  - `wf10` 的 node 4 placeholder 必須逐案注入；adapter 已加入角色、姿勢、
+    場景與光線一致性 guard。
+  - 任務與圖片目前保存在單一 Gateway process 記憶體，重啟後不保留；
+    不屬於本輪的資料庫／資產持久化尚未實作。
+  - 真實 GPU 像素重放未在 Codex sandbox 內執行；本輪使用 fake transport、
+    API graph assertions、golden 視覺素材與離線 status 驗證接線。
+- **下一步**：
+  - 使用者啟動釘定的 ComfyUI 後，先以一張 16:9 場景與角色正面圖做
+    opt-in 實機 smoke，確認節點／模型與實際顯存時間。
+  - 實機通過後再決定是否加入持久化資產庫、工作歷史、取消 UI，以及
+    雙角色 B1 選片 → B2 選片的第二階段人工 QA 流程。
+
+## 2026-07-20 19:34 UTC（2026-07-21 03:34 Asia/Taipei）— 選定單圖 4K 與本機邊界硬化
+
+- **目的**：依「不是所有分鏡都放大，只有確定要的才放大」完成最後選片
+  契約，並補齊 loopback 無登入服務在長時間執行與瀏覽器操作下的安全、
+  競態及復原邊界。
+- **執行內容**：
+  - 4K request 新增 server-issued `expected_candidate_id`；後端在同一把
+    排程鎖內核對目前選片，拒絕舊分頁、偽造 ID、重複排程與排程後換片。
+  - UI 支援確認 A 後改選並確認 B；只有最後確認的 B 會送入 4K。
+    queued／running 與狀態不明時鎖定來源，完成後可開始下一個分鏡。
+  - 輪詢遇暫時網路／5xx／409 時採 1、2、4、8、15 秒重試，不重送 POST；
+    超過五次仍保留畫面與 run，提供手動重新查詢。
+  - ASGI layer 拒絕非 loopback client 與跨站 mutation，加入同源 CORP；
+    multipart 在 receive layer 設總 body hard cap。
+  - queue、run 數與保留圖片 bytes 設上限；兩張來源上傳 ComfyUI 後立即
+    釋放 Gateway 內 copy，滿載安全回 429。
+  - Comfy client 精確核對 upload／prompt identity；由 Gateway 先核發
+    prompt ID，shutdown 停止 worker 後再定向取消，避免孤兒 GPU 任務。
+  - 兩份 workflow 以 SHA-256 fail closed，並新增 `.gitattributes` 固定
+    B1 與 wf10 為 LF，避免 Windows CRLF 造成假性 hash 失敗，同時保留
+    其他歷史 workflow 的原始換行。
+  - Comfy readiness 從兩個節點擴為兩份 graph 的 21 個 distinct
+    `class_type`；UI 明示非 16:9 來源會被 wf10 置中裁切。
+- **修改檔案**：
+  - `.gitattributes`、`.env.example`、`AGENTS.md`、`README.md`
+  - `backend/app/gateway_main.py`
+  - `backend/app/core/workflow_settings.py`
+  - `backend/app/schemas/api/workflows.py`
+  - `backend/app/api/routes/workflows.py`
+  - `backend/app/services/workflows/`
+  - `frontend/gateway/index.html`
+  - `frontend/gateway/app.js`
+  - `frontend/gateway/styles.css`
+  - `tests/test_storyboard_workflows.py`
+  - `tests/e2e/test_codex_gateway_page.py`
+  - `docs/PROJECT_SPEC.md`
+  - `docs/tasks/STORYBOARD_WORKFLOW_INTEGRATION.md`
+- **重要命令**：
+  - `.venv/bin/pytest -q`
+  - `.venv/bin/ruff format --check .`
+  - `.venv/bin/ruff check .`
+  - `.venv/bin/mypy backend tests`
+  - `node --check frontend/gateway/app.js`
+  - `git diff --check`
+  - `git check-attr text eol -- docs/workflows/wf_dual_B1.json
+    docs/workflows/wf10_upscale_opt2.json`
+  - `sha256sum docs/workflows/wf_dual_B1.json
+    docs/workflows/wf10_upscale_opt2.json`
+  - loopback Uvicorn 啟動、首頁／workflow status／跨站 POST smoke。
+- **驗證結果**：
+  - pytest=`25 passed, 1 known Starlette/httpx deprecation warning`；
+    workflow unit／API=`13 passed`，Browser E2E=`2 passed`。
+  - Ruff format/check、mypy（29 files）、Node syntax 與 whitespace check
+    全部 PASS。
+  - E2E 驗證 A → B 重新選片、只有 B 的 expected ID 進 4K、POST 409
+    加一次 GET 503 後自動完成，create／upscale POST 皆只有一次。
+  - workflow SHA-256 仍為
+    `ceefd5844cab5f10368f8999d6362551b43edd92743ac36000fb365c6ae5c1c8`
+    與
+    `a141d9988a617680c282a1c3df5fb93e3d49e4b311ce36b448e6fbc3dd81756e`；
+    Git attribute 對兩檔皆為 `text: set`、`eol: lf`。
+  - ComfyUI 離線時 Gateway 啟動成功，首頁回 200、workflow status 安全回
+    `unavailable`；外站 Origin mutation 回 403。
+  - 最終 shell 沒有可執行的 `uv`，因此未重跑 `uv lock --check`／
+    `uv sync --locked --check`；依賴與 lockfile 在前一輪整合驗證已通過，
+    本次硬化未再修改依賴宣告。
+- **發現事項**：
+  - 唯讀核對現有 WSL ComfyUI：core=`ab0d8a92`、
+    ComfyUI-GGUF=`cf05733`、Python 3.12.3、torch 2.12.0+cu130；
+    八顆固定模型均能由既有 `extra_model_paths.yaml` 指向的位置找到。本輪
+    未重新掃描 43GB SHA-256。
+  - status 現在驗全部必要 node，但尚未解析 loader option 以驗證八個模型
+    名稱；本機不受影響，其他電腦的安裝器／preflight 後續應補。
+  - Gateway 不會擅自刪除共用 ComfyUI 的 input／output；長期磁碟清理與
+    正式資產持久化仍屬後續資產層。
+  - 真實模型載入、16GB VRAM offload、生成像素與黃金圖比對仍未執行。
+- **下一步**：
+  - 使用 README 的 custom-node whitelist 啟動釘定 ComfyUI，再以一張
+    16:9 場景與角色正面圖做 opt-in GPU smoke：產生候選、選定一張、
+    確認只建立一個 wf10 工作並下載 3840×2160 成品。
+  - 安裝腳本階段加入八模型名稱／SHA-256 preflight，以及 owned ComfyUI
+    與既有共用 ComfyUI 的明確採用策略。
