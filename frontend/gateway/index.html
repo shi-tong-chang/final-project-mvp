@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="在同一個故事工作台規劃角色、場景與分鏡，從風格櫥窗選擇一致的視覺語言。"
+    />
+    <title>故事工作台｜Storyboard Consistency</title>
+    <link rel="stylesheet" href="/static/gateway/styles.css" />
+    <script src="/static/gateway/app.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#workspace">跳到主要工作區</a>
+
+    <div class="studio-shell">
+      <nav class="tool-rail" aria-label="生成內容分類">
+        <div class="studio-mark" aria-label="Storyboard Studio">
+          <span aria-hidden="true">SB</span>
+        </div>
+
+        <div
+          id="workspace-tabs"
+          class="tool-tabs"
+          role="tablist"
+          aria-orientation="vertical"
+          aria-label="工作台分類"
+        >
+          <button
+            id="character-tab"
+            class="tool-tab is-active"
+            type="button"
+            role="tab"
+            aria-selected="true"
+            aria-controls="character-panel"
+            tabindex="0"
+            data-tab="character"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <circle cx="12" cy="8" r="4"></circle>
+              <path d="M5 21v-2.2c0-3.2 3.1-5.8 7-5.8s7 2.6 7 5.8V21"></path>
+            </svg>
+            <span>生成角色</span>
+          </button>
+          <button
+            id="scene-tab"
+            class="tool-tab"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-controls="scene-panel"
+            tabindex="-1"
+            data-tab="scene"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M3 20h18M5 20l4-9 3 5 3-8 4 12"></path>
+              <circle cx="7" cy="6" r="2"></circle>
+            </svg>
+            <span>生成場景</span>
+          </button>
+          <button
+            id="storyboard-tab"
+            class="tool-tab"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-controls="storyboard-panel"
+            tabindex="-1"
+            data-tab="storyboard"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+              <path d="M9 4v16M15 4v16M3 10h18M3 15h18"></path>
+            </svg>
+            <span>生成分鏡</span>
+          </button>
+        </div>
+
+      </nav>
+
+      <main id="workspace" class="workbench" tabindex="-1">
+        <header class="workspace-header">
+          <div>
+            <p class="kicker">Storyboard Consistency · Visual Studio</p>
+            <h1>故事工作台</h1>
+          </div>
+        </header>
+
+        <section
+          id="character-panel"
+          class="workspace-panel"
+          role="tabpanel"
+          aria-labelledby="character-tab"
+          data-panel="character"
+        >
+          <div class="panel-heading">
+            <div>
+              <p class="section-number">01 / CHARACTER</p>
+              <h2>角色風格櫥窗</h2>
+              <p>
+                二十種風格都使用同一位示範角色，只改變媒材與畫面質感；選中後會套用該卡綁定的風格提示詞。
+              </p>
+            </div>
+            <span class="phase-tag">20 種風格</span>
+          </div>
+
+          <form id="character-style-form" class="generator-layout">
+            <div class="editor-stack">
+              <section class="paper-card brief-card" aria-labelledby="character-brief-title">
+                <div class="card-title-row">
+                  <div>
+                    <p class="card-index">角色設定</p>
+                    <h3 id="character-brief-title">這個人是誰？</h3>
+                  </div>
+                  <span id="character-prompt-count" class="field-count">0 / 1200</span>
+                </div>
+                <label for="character-prompt">角色描述</label>
+                <textarea
+                  id="character-prompt"
+                  name="prompt"
+                  rows="7"
+                  maxlength="1200"
+                  required
+                  data-count-target="character-prompt-count"
+                  placeholder="例如：二十歲的鐘錶修復師，短黑髮、琥珀色眼睛，穿著帶有黃銅扣件的深藍工作服；安靜、敏銳，總把一枚壞掉的懷錶帶在身上。"
+                ></textarea>
+                <div class="prompt-notes" aria-label="角色描述建議">
+                  <span>外觀輪廓</span>
+                  <span>服裝配件</span>
+                  <span>性格氣質</span>
+                  <span>故事線索</span>
+                </div>
+              </section>
+
+              <fieldset class="paper-card style-picker">
+                <legend>選擇角色風格</legend>
+                <p class="field-help">
+                  每張卡保留完全相同的角色輪廓，只示範不同媒材。現在先用繪製預覽，後續可原位換成你提供的正式風格圖。
+                </p>
+                <div
+                  id="character-style-grid"
+                  class="style-grid"
+                  data-catalog-region="character-styles"
+                  aria-live="polite"
+                >
+                  <p class="catalog-loading">正在整理風格櫥窗…</p>
+                </div>
+              </fieldset>
+
+              <div class="action-bar">
+                <div>
+                  <strong>角色設定＋風格提示詞</strong>
+                  <span>只建立可重現的完整提示詞，目前不會啟動圖片生成。</span>
+                  <p
+                    id="prompt-copy-status"
+                    class="prompt-copy-status"
+                    role="status"
+                    aria-live="polite"
+                  ></p>
+                </div>
+                <button id="copy-character-prompt" class="primary-button" type="submit">
+                  <span id="copy-character-prompt-label">複製完整提示詞</span>
+                  <svg aria-hidden="true" viewBox="0 0 24 24">
+                    <rect x="8" y="8" width="11" height="11" rx="2"></rect>
+                    <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <aside class="showcase-card character-showcase" aria-labelledby="selected-style-name">
+              <div class="showcase-topline">
+                <span>STYLE WINDOW</span>
+                <span class="asset-state">同角色預覽</span>
+              </div>
+              <div id="character-hero-art" class="hero-art style-cel" aria-hidden="true">
+                <span class="hero-horizon"></span>
+                <span class="hero-halo"></span>
+                <span class="hero-hair"></span>
+                <span class="hero-face"></span>
+                <span class="hero-body"></span>
+                <span class="hero-texture"></span>
+              </div>
+              <div class="showcase-caption">
+                <p>目前選擇</p>
+                <h3 id="selected-style-name">賽璐璐動畫</h3>
+                <span id="selected-style-description"
+                  >乾淨輪廓、平塗色塊與俐落的兩階段陰影。</span
+                >
+                <div id="selected-style-tags" class="selected-style-tags">
+                  <span>動畫</span><span>平塗</span><span>清晰輪廓</span>
+                </div>
+              </div>
+              <div class="style-prompt-card">
+                <p>STYLE PROMPT</p>
+                <blockquote id="selected-style-prompt">
+                  以日系賽璐璐動畫風格呈現，使用乾淨外輪廓、分區明確的平塗色塊、兩階段陰影與精準高光。
+                </blockquote>
+              </div>
+            </aside>
+          </form>
+        </section>
+
+        <section
+          id="scene-panel"
+          class="workspace-panel"
+          role="tabpanel"
+          aria-labelledby="scene-tab"
+          data-panel="scene"
+          hidden
+        >
+          <div class="panel-heading">
+            <div>
+              <p class="section-number">02 / SCENE</p>
+              <h2>搭建故事場景</h2>
+              <p>
+                描述地點、時間與氣氛；先以可替換的舞台櫥窗確認構圖方向，不預設出現人物。
+              </p>
+            </div>
+            <span class="phase-tag">素材待補</span>
+          </div>
+
+          <div class="generator-layout">
+            <div class="editor-stack">
+              <section class="paper-card brief-card" aria-labelledby="scene-brief-title">
+                <div class="card-title-row">
+                  <div>
+                    <p class="card-index">場景設定</p>
+                    <h3 id="scene-brief-title">故事發生在哪裡？</h3>
+                  </div>
+                  <span id="scene-prompt-count" class="field-count">0 / 1200</span>
+                </div>
+                <label for="scene-prompt">場景描述</label>
+                <textarea
+                  id="scene-prompt"
+                  name="prompt"
+                  rows="7"
+                  maxlength="1200"
+                  required
+                  data-count-target="scene-prompt-count"
+                  placeholder="例如：深夜的老城鐘樓工坊，長桌上散落齒輪與圖紙；窗外剛停雨，冷藍月光穿過百葉窗，室內只有一盞暖黃工作燈。畫面中不出現任何人物。"
+                ></textarea>
+                <div class="two-field-grid">
+                  <label>
+                    時間與光線
+                    <select id="scene-light" name="light">
+                      <option value="night-practical">夜景／室內實景光</option>
+                      <option value="golden-hour">黃昏／斜射暖光</option>
+                      <option value="overcast">陰天／柔和散射光</option>
+                      <option value="daylight">日間／清晰自然光</option>
+                    </select>
+                  </label>
+                  <label>
+                    空間尺度
+                    <select id="scene-scale" name="scale">
+                      <option value="medium">中景／可讀空間關係</option>
+                      <option value="wide">廣角／強調環境規模</option>
+                      <option value="intimate">近景／聚焦物件細節</option>
+                    </select>
+                  </label>
+                </div>
+              </section>
+
+              <fieldset class="paper-card scene-presets">
+                <legend>場景方向</legend>
+                <p class="field-help">選一個構圖語氣；卡面保留給後續正式場景參考圖。</p>
+                <div class="preset-row">
+                  <label class="preset-card">
+                    <input
+                      type="radio"
+                      name="scene-direction"
+                      value="architectural"
+                      data-direction-name="建築敘事"
+                      checked
+                    />
+                    <span class="mini-scene mini-architecture" aria-hidden="true">
+                      <i></i><i></i><i></i>
+                    </span>
+                    <strong>建築敘事</strong>
+                    <small>空間結構帶領視線</small>
+                  </label>
+                  <label class="preset-card">
+                    <input
+                      type="radio"
+                      name="scene-direction"
+                      value="atmospheric"
+                      data-direction-name="氛圍優先"
+                    />
+                    <span class="mini-scene mini-atmosphere" aria-hidden="true">
+                      <i></i><i></i><i></i>
+                    </span>
+                    <strong>氛圍優先</strong>
+                    <small>光影與天候主導情緒</small>
+                  </label>
+                  <label class="preset-card">
+                    <input
+                      type="radio"
+                      name="scene-direction"
+                      value="object-led"
+                      data-direction-name="物件線索"
+                    />
+                    <span class="mini-scene mini-object" aria-hidden="true">
+                      <i></i><i></i><i></i>
+                    </span>
+                    <strong>物件線索</strong>
+                    <small>以關鍵道具建立故事</small>
+                  </label>
+                </div>
+              </fieldset>
+
+              <div class="action-bar is-placeholder">
+                <div>
+                  <strong>場景功能預留</strong>
+                  <span>目前設定只在頁面內預覽，正式生成接線會在後續階段加入。</span>
+                </div>
+              </div>
+            </div>
+
+            <aside class="showcase-card scene-showcase" aria-labelledby="selected-scene-direction">
+              <div class="showcase-topline">
+                <span>LOCATION WINDOW</span>
+                <span class="asset-state">展示佔位</span>
+              </div>
+              <div id="scene-hero-art" class="scene-stage direction-architectural" aria-hidden="true">
+                <span class="stage-moon"></span>
+                <span class="stage-window"></span>
+                <span class="stage-wall"></span>
+                <span class="stage-desk"></span>
+                <span class="stage-lamp"></span>
+                <span class="stage-paper"></span>
+              </div>
+              <div class="showcase-caption">
+                <p>目前構圖方向</p>
+                <h3 id="selected-scene-direction">建築敘事</h3>
+                <span>這裡將呈現場景候選與正式 plate；目前不呼叫生成工作流。</span>
+              </div>
+              <div class="empty-shelf">
+                <span>場景候選 01</span>
+                <span>場景候選 02</span>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section
+          id="storyboard-panel"
+          class="workspace-panel"
+          role="tabpanel"
+          aria-labelledby="storyboard-tab"
+          data-panel="storyboard"
+          hidden
+        >
+          <div class="panel-heading">
+            <div>
+              <p class="section-number">03 / STORYBOARD</p>
+              <h2>編排分鏡節奏</h2>
+              <p>
+                把事件寫成可拍攝的瞬間。分鏡櫥窗先展示版面與鏡頭節奏，後續再換入角色及場景資產。
+              </p>
+            </div>
+            <span class="phase-tag">流程預覽</span>
+          </div>
+
+          <div class="generator-layout">
+            <div class="editor-stack">
+              <section class="paper-card brief-card" aria-labelledby="storyboard-brief-title">
+                <div class="card-title-row">
+                  <div>
+                    <p class="card-index">分鏡內容</p>
+                    <h3 id="storyboard-brief-title">這一幕發生什麼事？</h3>
+                  </div>
+                  <span id="storyboard-prompt-count" class="field-count">0 / 1600</span>
+                </div>
+                <label for="storyboard-prompt">段落或鏡頭描述</label>
+                <textarea
+                  id="storyboard-prompt"
+                  name="prompt"
+                  rows="8"
+                  maxlength="1600"
+                  required
+                  data-count-target="storyboard-prompt-count"
+                  placeholder="例如：主角推開工坊的門，看見停擺多年的大鐘突然開始倒轉。他先愣住，接著快步走向工作桌，發現那枚壞掉的懷錶正發出微光。"
+                ></textarea>
+                <div class="three-field-grid">
+                  <label>
+                    畫面比例
+                    <select id="storyboard-ratio" name="ratio">
+                      <option value="16:9">16:9 橫幅</option>
+                      <option value="2.39:1">2.39:1 寬銀幕</option>
+                      <option value="4:3">4:3 經典畫幅</option>
+                      <option value="9:16">9:16 直幅</option>
+                    </select>
+                  </label>
+                  <label>
+                    建議格數
+                    <select id="storyboard-frames" name="frames">
+                      <option value="3">3 格／精簡節奏</option>
+                      <option value="5">5 格／完整動作</option>
+                      <option value="7">7 格／細緻拆解</option>
+                    </select>
+                  </label>
+                  <label>
+                    主要節奏
+                    <select id="storyboard-pace" name="pace">
+                      <option value="measured">沉著推進</option>
+                      <option value="suspense">懸疑停頓</option>
+                      <option value="kinetic">快速動態</option>
+                      <option value="intimate">細膩情緒</option>
+                    </select>
+                  </label>
+                </div>
+              </section>
+
+              <fieldset class="paper-card shot-picker">
+                <legend>鏡頭組合</legend>
+                <p class="field-help">先選閱讀節奏；後續接上規劃流程時可再依事件內容調整鏡位。</p>
+                <div class="shot-options">
+                  <label>
+                    <input
+                      type="radio"
+                      name="shot-pattern"
+                      value="establish-react-detail"
+                      data-pattern-name="建立・反應・細節"
+                      checked
+                    />
+                    <span class="shot-diagram" aria-hidden="true">
+                      <i class="wide"></i><i class="medium"></i><i class="close"></i>
+                    </span>
+                    <span><strong>建立・反應・細節</strong><small>清楚交代事件</small></span>
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      name="shot-pattern"
+                      value="detail-reveal"
+                      data-pattern-name="細節・揭露"
+                    />
+                    <span class="shot-diagram is-reversed" aria-hidden="true">
+                      <i class="close"></i><i class="medium"></i><i class="wide"></i>
+                    </span>
+                    <span><strong>細節・揭露</strong><small>逐步擴大資訊</small></span>
+                  </label>
+                </div>
+              </fieldset>
+
+              <div class="action-bar is-placeholder">
+                <div>
+                  <strong>分鏡功能預留</strong>
+                  <span>目前只展示鏡頭節奏與版面，不會啟動 GPU 或建立生成任務。</span>
+                </div>
+              </div>
+            </div>
+
+            <aside class="showcase-card storyboard-showcase" aria-labelledby="selected-shot-pattern">
+              <div class="showcase-topline">
+                <span>SHOT BOARD</span>
+                <span class="asset-state">展示佔位</span>
+              </div>
+              <div class="story-frames">
+                <span class="story-frame frame-wide">
+                  <i class="frame-window"></i><i class="frame-person"></i>
+                  <b>01</b>
+                </span>
+                <span class="story-frame frame-reaction">
+                  <i class="frame-face"></i><i class="frame-light"></i>
+                  <b>02</b>
+                </span>
+                <span class="story-frame frame-detail">
+                  <i class="frame-watch"></i><i class="frame-hand"></i>
+                  <b>03</b>
+                </span>
+              </div>
+              <div class="showcase-caption">
+                <p>目前鏡頭組合</p>
+                <h3 id="selected-shot-pattern">建立・反應・細節</h3>
+                <span>角色 master、場景 plate 與獲選分鏡會在後續接線時填入。</span>
+              </div>
+              <div class="timeline-rule" aria-hidden="true">
+                <span></span><span></span><span></span>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <footer class="workspace-footer">
+          <span>本機工作區 · 單機服務</span>
+          <span id="catalog-version">Catalog：載入中</span>
+        </footer>
+      </main>
+
+    </div>
+  </body>
+</html>
