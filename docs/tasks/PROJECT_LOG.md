@@ -741,3 +741,44 @@
     strict Agent 插槽契約接線，成功輸出再呼叫 trusted registration CLI。
   - 在目標 WSL／RTX 5070 Ti 以黃金素材實跑單角色、雙角色及選定後 4K，
     記錄耗時、VRAM、版本與肉眼一致性結果。
+
+## 2026-07-21 06:52 UTC（2026-07-21 14:52 Asia/Taipei）— 素材庫與 runtime ownership 隔離更正
+
+- **目的**：修正前一筆發布把素材庫預設放在 `.runtime/asset-library/`
+  的 ownership 衝突；未安裝 runtime 時若先啟動 Gateway，該目錄會缺少
+  runtime marker，使後續「安裝環境」正確但不符合使用預期地 fail closed。
+- **執行內容**：
+  - 將預設與範例改為 Git-ignored `.local-data/asset-library/`，讓不可重建
+    的角色／場景素材與可重建的 runtime state 分離。
+  - `WorkflowSettings` 限制任何環境或 CLI 覆寫都必須位於 repository
+    `.local-data/` 子樹，拒絕 `.runtime`、`.git`、`.venv` 與 tracked source。
+  - README 與 clone-to-run 文件補上升級舊路徑、搬移 repository、備份
+    `.local-data` 及避免 `git clean -fdX` 誤刪正式素材的說明。
+  - 新增回歸：預設素材庫啟動後 `.runtime` 必須仍不存在；舊
+    `.runtime/asset-library` 覆寫必須被 schema 拒絕。
+- **修改檔案**：`.gitignore`、`.env.example`、workflow settings、素材
+  registration CLI、README／AGENTS／產品與 clone 文件，以及 asset／
+  workflow／browser tests。
+- **重要命令**：
+  - `.venv/bin/pytest`
+  - `.venv/bin/ruff format --check .`
+  - `.venv/bin/ruff check .`
+  - `.venv/bin/mypy backend runtime scripts tests`
+  - `node --check frontend/gateway/app.js`
+  - `git diff --check`
+  - `python3 scripts/fpmvp_runtime.py --json status`
+  - `git push origin main`
+- **驗證結果**：
+  - pytest=`86 passed, 1 known Starlette TestClient/httpx2 deprecation warning`；
+    Ruff、mypy（47 files）、Node syntax 與 Git whitespace 全部 PASS。
+  - 實際在 runtime 尚未安裝時啟動 Gateway，`GET /api/v1/gateway/assets`
+    回 `200` 空庫；`.local-data/asset-library/` 正常建立，而 `.runtime`
+    維持不存在。runtime status 回 `RUNTIME_NOT_INSTALLED`，不是 ownership
+    error。
+  - Fix commit `11257ed38ef4ee544e8d5acd7d23c6b5a63a46c7` 已成功推送至
+    GitHub `main`，沒有 force push。
+- **發現事項**：前一個 feature commit 存在時間很短；若有人已在該版登錄
+  素材，必須先停止 Gateway、完整備份，再人工遷移到新路徑，不能自動
+  刪除或重寫既有 `.runtime`。
+- **下一步**：維持 `.local-data` 為使用者素材 authority；接入 Agent 時
+  只呼叫同一 trusted registration CLI，不另建第二套歷史儲存位置。
