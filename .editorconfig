@@ -1,0 +1,40 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+
+[*.py]
+indent_size = 4
+
+[*.{css,html,js,json,jsonl,toml,yaml,yml}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+# 來源機 manifests 與封存 workflow 是 provenance fixture；不得由編輯器
+# 自動改寫其既有 CRLF bytes。
+[docs/manifests/**]
+end_of_line = unset
+insert_final_newline = unset
+trim_trailing_whitespace = unset
+
+[docs/workflows/wallpaper_4k/**]
+end_of_line = unset
+insert_final_newline = unset
+trim_trailing_whitespace = unset
+
+[docs/workflows/t2i/**]
+end_of_line = unset
+insert_final_newline = unset
+trim_trailing_whitespace = unset
+
+# wf03 的 golden SHA-256 刻意涵蓋來源 CRLF bytes。
+[docs/workflows/wf03_matte.json]
+end_of_line = unset
+insert_final_newline = unset
+trim_trailing_whitespace = unset

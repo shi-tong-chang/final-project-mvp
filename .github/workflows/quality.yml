@@ -1,0 +1,59 @@
+name: quality
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Bootstrap locked development environment
+        run: python3 scripts/setup_dev.py
+      - name: Run non-browser tests
+        run: .venv/bin/pytest -m "not browser"
+      - name: Check Python formatting
+        run: .venv/bin/ruff format --check .
+      - name: Lint Python
+        run: .venv/bin/ruff check .
+      - name: Type-check Python
+        run: .venv/bin/mypy backend runtime scripts tests
+      - name: Check frontend syntax
+        run: node --check frontend/gateway/app.js
+      - name: Check committed Git whitespace
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: git diff --check "$BASE_SHA" "$HEAD_SHA"
+
+  browser-e2e:
+    name: browser-e2e
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Bootstrap locked development environment
+        run: python3 scripts/setup_dev.py
+      - name: Install lock-matched Chromium and system dependencies
+        run: .venv/bin/playwright install --with-deps chromium
+      - name: Run browser tests
+        run: .venv/bin/pytest -m browser

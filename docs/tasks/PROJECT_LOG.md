@@ -807,3 +807,77 @@
   但 MVP 仍應先保留使用者可見、可確認與可追溯的最終提示詞。
 - **下一步**：若實作 prompt-refinement Agent，先定義 strict input/output schema、
   圖像存取邊界與使用者確認 UI，再接到現有 adapter guard 之前。
+
+## 2026-07-21 08:05 UTC（2026-07-21 16:05 Asia/Taipei）— 組員 clone-to-branch 開發與版控基線
+
+- **目的**：讓組員從 GitHub clone 後能先開 feature branch，以不下載
+  ComfyUI／模型的輕量環境開始 API、UI、文件與測試開發，並以 Pull
+  Request、CI 與一致的 Git hygiene 交付。
+- **執行內容**：
+  - 先 fetch 遠端並發現本機 tracking ref 落後七個 commit；逐檔 blob
+    對照證明原 dirty／untracked 內容與遠端完全相同後，以 safety stash
+    保全，再 fast-forward 到真正的 `origin/main`，沒有重複 commit 或
+    覆寫遠端歷史。本輪從同步後 main 建立 `chore/team-development-baseline`。
+  - 新增 `scripts/setup_dev.py`，重用 runtime lock 的 uv 0.11.29 URL／SHA
+    與 Gateway Python 3.12.10 pin，只在 ignored `.python/` 準備工具、cache
+    與 Python，再以 `uv sync --locked --dev` 建立 `.venv/`；固定 argv、
+    `shell=False`，過濾 secrets，拒絕錯誤 ignore、symlink、越界路徑與版本
+    漂移，並提供零寫入／零 subprocess 的 `--dry-run`。
+  - 新增 unit regression，證明 bootstrap 不建立或修改 `.runtime`、models、
+    ComfyUI 與 `.local-data`；實際重跑也以前後 metadata digest 證明 runtime
+    state 與素材庫沒有變動。
+  - 新增 `CONTRIBUTING.md`、Pull Request template 與 GitHub Actions：一般
+    `quality` 跑非 Browser pytest、Ruff、mypy、Node 與 Git whitespace；
+    `browser-e2e` 另安裝 lock-matched Playwright Chromium 再跑三項 E2E。
+    Workflow 僅有 `contents: read`，checkout action 固定完整 release SHA，
+    CI 不安裝 ComfyUI、不下載模型、不執行 GPU workflow。
+  - 註冊 pytest `browser` marker，修正 README 原本先跑完整 pytest、後安裝
+    Chromium 的 fresh-clone 順序；AGENTS 與 README 補上 feature branch、
+    PR、review、staged whitespace 與單一 PROJECT_LOG 追加規則。
+  - 擴充 `.gitignore` 的 `.env.*`、direnv、IDE／OS、Node、coverage 與 DB
+    噪音；新增 EditorConfig 與現役 source LF／圖片 binary attributes。
+    歷史 manifests、封存 workflow 與 `wf03_matte.json` 保留原 bytes，不做
+    全域 renormalize；wf03 文件所列 SHA-256 維持不變。
+  - 更正重現文件：現行雙角色每張候選自動 B1→B2，沒有 B1 人工選片；
+    另註明 4K golden 檔名 seed 與 wf10 KSampler seed 的不同責任。
+- **修改檔案**：
+  - `scripts/setup_dev.py`、`tests/test_dev_setup.py`
+  - `.github/workflows/quality.yml`、`.github/pull_request_template.md`
+  - `CONTRIBUTING.md`、`README.md`、`AGENTS.md`、`docs/README_repro.md`
+  - `.gitignore`、`.gitattributes`、`.editorconfig`、`pyproject.toml`
+  - `tests/e2e/test_codex_gateway_page.py`、`docs/tasks/PROJECT_LOG.md`
+- **重要命令**：
+  - `git fetch --prune origin`、`git stash push --include-untracked`、
+    `git merge --ff-only origin/main`
+  - `python3 scripts/setup_dev.py --dry-run`、`python3 scripts/setup_dev.py`
+  - `uv lock --check`、`uv sync --locked --dev --check`
+  - `.venv/bin/pytest`、`.venv/bin/ruff format --check .`、
+    `.venv/bin/ruff check .`
+  - `.venv/bin/mypy backend runtime scripts tests`
+  - `node --check frontend/gateway/app.js`、`git diff HEAD --check`
+  - Git ignore／attribute、tracked-large-file、secret pattern、workflow／golden
+    SHA-256 與相對 Markdown link 稽核。
+- **驗證結果**：
+  - full pytest=`94 passed, 1 known Starlette TestClient/httpx2 deprecation
+    warning`；新增 dev bootstrap 專項=`8 passed`。
+  - Ruff format/check、mypy（49 files）、Node syntax、Git whitespace、uv lock
+    與 locked environment check 全部 PASS。
+  - 實際輕量 bootstrap 回報 Python 3.12.10／uv 0.11.29；執行前後
+    `.runtime` 與 `.local-data` metadata digest 完全相同。
+  - 高信心 private key／token pattern 無命中，tracked-but-ignored 為空；
+    repository 沒有追蹤 venv、runtime、模型、logs、DB 或使用者素材。
+  - `wf02_insert`、`wf03_matte`、B1、B2 與 wf10 working bytes 均與 HEAD 及
+    文件 golden SHA 相符；沒有執行真實 ComfyUI／GPU 重放。
+- **發現事項**：
+  - Repository 目前是 public，尚未有 LICENSE；本輪不替 owner 猜授權。
+    CODEOWNERS 也等待實際組員 GitHub 帳號，不建立 placeholder。
+  - 本輪開始時 GitHub `main` 尚未保護，也沒有 required checks。CI 必須先
+    合併並產生 check context，才設定 PR approval、`quality`、
+    `browser-e2e`、conversation resolution、linear history、禁止 force
+    push／刪除與禁止 bypass。
+  - 歷史 PROJECT_LOG／manifest 的來源機路徑已存在已發布歷史；本輪不做
+    force push 或歷史重寫，只確保新增內容沒有個人絕對路徑或秘密。
+- **下一步**：推送本 feature branch、以 Pull Request 觀察兩個 CI job，
+  合併後啟用 main 保護；owner 再加入組員 collaborator 並決定 LICENSE／
+  CODEOWNERS。真實 RTX 5070 Ti 單／雙角色與選定後 4K 仍是獨立 opt-in
+  驗收，不由本次版控工作冒充完成。

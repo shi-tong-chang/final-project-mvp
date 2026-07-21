@@ -157,6 +157,9 @@ developer_instructions = """
 - 前端不使用 `innerHTML`、外部 CDN、遠端字型或未授權圖片。
 - Runtime subprocess 一律使用固定 argv 與 `shell=False`；下載只接受
   lock 內 HTTPS URL，完整 SHA 通過後才發布。
+- 一般 API／UI／文件開發以 `python3 scripts/setup_dev.py` 建立 locked
+  `.python/`／`.venv/`；這個入口不得建立 `.runtime/`、安裝 ComfyUI、
+  掃描或下載模型。真實 GPU runtime 仍只走第 2 節固定命令。
 - 修改功能時同步更新 unit／browser regression。
 
 完成修改至少執行：
@@ -167,17 +170,23 @@ developer_instructions = """
 .venv/bin/ruff check .
 .venv/bin/mypy backend runtime scripts tests
 node --check frontend/gateway/app.js
-git diff --check
+git diff HEAD --check
+git diff --cached --check  # 有 staged 內容時
 ```
 
 ## 7. 執行紀錄與版本控制
 
-- 具實質影響的動作追加到 `docs/tasks/PROJECT_LOG.md`，不得重寫歷史；每則
-  包含目的、執行內容、修改檔案、重要命令、驗證結果、發現與下一步，不
-  寫入秘密。
+- 具實質影響的動作追加到 `docs/tasks/PROJECT_LOG.md`，不得重寫歷史；每個
+  Pull Request 原則上只在同步最新 `origin/main` 後追加一則，降低多人分支
+  衝突。每則包含目的、執行內容、修改檔案、重要命令、驗證結果、發現與
+  下一步，不寫入秘密。
 - 所有可交付修改納入 Git；開始前檢查 working tree，保留使用者既有變更。
 - 預設 branch 是 `main`，遠端是
   `https://github.com/shi-tong-chang/final-project-mvp.git`。
+- 組員一律從最新 `origin/main` 建立 `feat/`、`fix/`、`docs/`、`test/` 或
+  `chore/` 短期分支；不得直接修改或 push `main`。完成後開 Pull Request，
+  通過 repository CI、處理所有對話與衝突，並至少由一位組員 review 後
+  合併。
 - 完成一組可交付修改後，依使用者授權以清楚的 Conventional Commit 訊息
   commit／push；權限、網路或本回合範圍不允許時如實回報。
 - 禁止未經明確要求 force push、重寫已發布歷史或丟棄使用者變更。

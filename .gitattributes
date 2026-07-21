@@ -1,4 +1,21 @@
-# Workflow adapters pin the exact file bytes with SHA-256.
+# 現役 source／協作設定固定 LF；歷史 provenance JSON 不做全域 renormalize。
+*.py text eol=lf
+*.js text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.md text eol=lf
+*.toml text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+uv.lock text eol=lf
+runtime/*.json text eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+
+# Workflow adapters pin the exact file bytes with SHA-256。
+docs/workflows/wf02_insert.json text eol=lf
 docs/workflows/wf_dual_B1.json text eol=lf
 docs/workflows/wf_dual_B2.json text eol=lf
 docs/workflows/wf10_upscale_opt2.json text eol=lf
