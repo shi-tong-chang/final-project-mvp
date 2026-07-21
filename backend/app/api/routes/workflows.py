@@ -13,13 +13,16 @@ from starlette.datastructures import UploadFile
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.formparsers import MultiPartException
 
+from app.api.routes.assets import get_asset_library_service
 from app.schemas.api.workflows import (
     StoryboardCreateSpec,
+    StoryboardFromLibraryCreateSpec,
     StoryboardRunResponse,
     StoryboardSelectionRequest,
     StoryboardUpscaleRequest,
     WorkflowStatusResponse,
 )
+from app.services.assets import AssetLibraryService
 from app.services.workflows.images import (
     UnsafeImageError,
     normalize_uploaded_image,
@@ -44,6 +47,10 @@ def get_workflow_service(request: Request) -> StoryboardWorkflowService:
 WorkflowServiceDependency = Annotated[
     StoryboardWorkflowService,
     Depends(get_workflow_service),
+]
+AssetLibraryDependency = Annotated[
+    AssetLibraryService,
+    Depends(get_asset_library_service),
 ]
 RunId = Annotated[str, Path(pattern=r"^run_[0-9a-f]{32}$")]
 CandidateId = Annotated[str, Path(pattern=r"^cand_[0-9a-f]{32}$")]
@@ -157,6 +164,31 @@ async def create_storyboard(
         spec,
         scene_image=scene_image,
         character_image=character_image,
+    )
+
+
+@router.post(
+    "/storyboards/from-library",
+    response_model=StoryboardRunResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def create_storyboard_from_library(
+    payload: StoryboardFromLibraryCreateSpec,
+    service: WorkflowServiceDependency,
+    assets: AssetLibraryDependency,
+) -> StoryboardRunResponse:
+    """以 server-resolved opaque 素材 ID 自動路由單或雙角色工作流。"""
+
+    resolved = await assets.resolve_storyboard_assets(
+        payload.scene_asset_id,
+        payload.character_asset_ids,
+    )
+    return await service.create_library_run(
+        payload,
+        scene_image=resolved.scene_image,
+        character_images=resolved.character_images,
+        scene_name=resolved.scene_name,
+        character_names=resolved.character_names,
     )
 
 

@@ -1,13 +1,16 @@
 # Final Project MVP
 
-這是一套只在本機運作的繁體中文故事視覺工作台。你可以把場景圖與一張
-角色正面參考圖組合成 1–3 張分鏡候選，先挑出真正要的那一張，再決定是否
-送去放大成 3840×2160。落選候選不會浪費時間做 4K。
+這是一套只在本機運作的繁體中文故事視覺工作台。你可以從本機圖庫挑選
+一個或兩個角色與一個場景，組合成 1–3 張分鏡候選，先挑出真正要的那一
+張，再決定是否送去放大成 3840×2160。落選候選不會浪費時間做 4K。
 
 目前角色頁提供二十種同角色風格展示；角色與場景頁都有「確認生成」入口
-與右側歷史軌。獨立角色生成 agent、場景生成 agent 尚未接入，因此確認
-按鈕只驗證目前設定，歷史軌顯示空狀態，不會冒充已完成圖片。這兩個
-pending 插槽不會阻擋既有的分鏡合成與「選定後才 4K」流程。
+與持久化本機圖庫。獨立角色生成 agent、場景生成 agent 尚未接入，因此
+確認按鈕目前只驗證設定，不會冒充已建立圖片。組員交付 Agent 後，可把
+角色四視圖或場景定稿登錄進圖庫；這兩個 pending 插槽不會阻擋手動上傳的
+單角色分鏡、圖庫已有素材時的單／雙角色合成，以及「選定後才 4K」流程。
+專案已追蹤 `.codex/agents/README.md`，所以日後加入兩份 Agent TOML 並正常
+commit 後，GitHub 與其他人的 clone 都會看得到。
 
 > 目前已完成程式、workflow、lock 與自動化測試層的接線；尚未在這台目標
 > RTX 5070 Ti 上跑完端到端 GPU 重放。來源機的黃金圖與歷史重放結果保留
@@ -248,26 +251,63 @@ Gateway ready 後（包括整體仍為 `degraded`）會 best-effort 開啟
 Browser；若 WSL 無法代開，請手動開啟 <http://127.0.0.1:8010>：
 
 1. 在角色風格櫥窗查看二十種同角色媒材，填寫角色描述並確認生成設定；
-   最右側歷史軌將在角色 Agent 接入後顯示已命名結果。
-2. 在場景頁填寫地點、光線、尺度與構圖方向並確認設定；場景 Agent 接入
-   前不會真的送出生成。
-3. 進入分鏡頁，上傳一張場景圖與一張角色**正面**參考圖；四視圖資產要先
-   取出正面圖，不能整張直接送入目前模板。
-4. 輸入合成描述，建立 1–3 張約 1 MP 候選。
-5. 檢視每張候選與 seed，明確選定真正要保留的一張。
-6. 需要時填寫 4K 精修描述，再把目前選定候選送入固定
-   `wf10_upscale_opt2`。
+   角色 Agent 尚待接入，已有的正式角色會以「前／左／右／後」四視圖顯示
+   在角色圖庫。
+2. 在場景頁填寫地點、光線、尺度與構圖方向並確認設定；場景 Agent 尚待
+   接入，已有的正式場景會顯示在場景圖庫。
+3. 進入分鏡頁，選擇一個或兩個角色，再選擇恰好一個場景。第一個被選的
+   角色是角色一；第二個是角色二，取消後重選即可調整順序。
+4. 圖庫沒有素材時，切換到「手動上傳」仍可上傳一張場景圖與一張角色
+   **正面**參考圖；這條 fallback 只支援單角色。
+5. 輸入合成描述，建立 1–3 張約 1 MP 最終候選。系統會自行判斷：一個
+   角色跑 `wf_dual_B1`；兩個角色依序跑
+   `wf_dual_B1` → `wf_dual_B2`。網頁不能自行指定 workflow、node 或 seed。
+6. 檢視每張候選與各階段 seed，明確選定真正要保留的一張。
+7. 需要時填寫 4K 精修描述，再把目前選定候選送入固定
+   `wf10_upscale_opt2`；未選與落選候選都不會被放大。
 
 未選定、尚未完成、舊分頁持有的過期 candidate ID 或落選候選，都不能
-啟動 4K。4K 固定是 16:9、3840×2160；非 16:9 來源會置中裁切。任務與
-生成資產目前由單一 Gateway process 暫存，重啟後不保留歷史。
+啟動 4K。4K 固定是 16:9、3840×2160；非 16:9 來源會置中裁切。分鏡任務
+與候選由單一 Gateway process 暫存，Gateway 重啟後不保留；已登錄的角色
+與場景則保存在 `.runtime/asset-library/`，重啟後仍會出現在圖庫。
 
 「生成角色」與「生成場景」目前是展示／預留入口；對應
 `.codex/agents/character_generator.toml` 與
 `.codex/agents/scene_generator.toml` 尚未交付，因此不能把示意預覽當成
-正式生成結果。「確認生成」只提供未來接線位置，右側歷史軌也不會在尚未
-產出圖片時新增假紀錄。這不影響使用者自行上傳角色正面圖與場景圖完成
-現有分鏡。
+正式生成結果。「確認生成」只提供未來接線位置，圖庫也不會在尚未產出
+圖片時新增假紀錄。這不影響使用者自行上傳角色正面圖與場景圖完成現有
+分鏡。
+
+### 把正式圖片登錄進圖庫
+
+這是給未來角色／場景 Agent controller 使用的 trusted CLI，也可用來把
+你已經完成的本機圖片匯入圖庫。它不需要把檔案上傳到外站；登錄時會檢查
+並重新編碼成安全 PNG，再回傳 server-owned asset ID。
+
+角色包必須一次提供完整四視圖：
+
+```bash
+.venv/bin/python scripts/register_generated_asset.py character \
+  --name "角色名稱" \
+  --description "用來辨識這份角色模板的簡短描述" \
+  --front "/path/to/front.png" \
+  --left "/path/to/left.png" \
+  --right "/path/to/right.png" \
+  --back "/path/to/back.png"
+```
+
+場景只需一張定稿圖：
+
+```bash
+.venv/bin/python scripts/register_generated_asset.py scene \
+  --name "場景名稱" \
+  --description "場景、時段與光線的簡短描述" \
+  --image "/path/to/scene.png"
+```
+
+成功時 CLI 會輸出 JSON。重新整理網站後，角色或場景會出現在各自圖庫及
+分鏡素材選擇區。原始來源路徑不會寫進 metadata；正式副本保存在
+`.runtime/asset-library/`，整個目錄已被 Git 排除。
 
 ## 狀態、logs 與常見排錯
 
@@ -288,6 +328,7 @@ python3 scripts/fpmvp_runtime.py status
   metadata 或 model lock 改變後 quick preflight 會要求重新驗證。
 - `.runtime/models/`：managed models；下載中檔案以同目錄 `.part` 保存。
 - `.runtime/comfy-data/`：受控的 input、output、temp 與 user data。
+- `.runtime/asset-library/`：已登錄的角色四視圖與場景定稿；不會進 Git。
 
 常見情況：
 
@@ -360,5 +401,6 @@ sudo .venv/bin/playwright install-deps chromium
 
 - [產品契約](docs/PROJECT_SPEC.md)
 - [Clone-to-run 契約與驗收](docs/tasks/CLONE_TO_RUN.md)
-- [單角色分鏡與選定後 4K 接線](docs/tasks/STORYBOARD_WORKFLOW_INTEGRATION.md)
+- [分鏡與選定後 4K 基礎接線](docs/tasks/STORYBOARD_WORKFLOW_INTEGRATION.md)
+- [本機圖庫與單／雙角色路由](docs/tasks/ASSET_LIBRARY_AND_DUAL_STORYBOARD.md)
 - [工作流、模型與黃金驗證資料](docs/README_repro.md)

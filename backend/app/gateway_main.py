@@ -17,6 +17,7 @@ from starlette.datastructures import MutableHeaders
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.types import ASGIApp, ExceptionHandler, Message, Receive, Scope, Send
 
+from app.api.routes.assets import router as asset_router
 from app.api.routes.codex_gateway import router as gateway_router
 from app.api.routes.workflows import router as workflow_router
 from app.core.gateway_settings import GatewaySettings
@@ -25,6 +26,7 @@ from app.schemas.api.codex_gateway import (
     GatewayErrorBody,
     GatewayErrorEnvelope,
 )
+from app.services.assets import AssetLibraryError, AssetLibraryService
 from app.services.codex_gateway.catalog import MockGatewayCatalogProvider
 from app.services.codex_gateway.client import (
     CodexAppServerClient,
@@ -64,6 +66,14 @@ async def _handle_gateway_error(
 async def _handle_workflow_error(
     request: Request,
     exc: WorkflowServiceError,
+) -> JSONResponse:
+    del request
+    return _error_response(exc.status_code, exc.code, exc.message)
+
+
+async def _handle_asset_library_error(
+    request: Request,
+    exc: AssetLibraryError,
 ) -> JSONResponse:
     del request
     return _error_response(exc.status_code, exc.code, exc.message)
@@ -121,10 +131,20 @@ class _RequestBoundaryMiddleware:
 
     _MUTATION_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
     _STORYBOARD_CREATE_PATH = "/api/v1/gateway/workflows/storyboards"
+    _STORYBOARD_LIBRARY_CREATE_PATH = (
+        "/api/v1/gateway/workflows/storyboards/from-library"
+    )
 
-    def __init__(self, app: ASGIApp, *, max_storyboard_body_bytes: int) -> None:
+    def __init__(
+        self,
+        app: ASGIApp,
+        *,
+        max_storyboard_body_bytes: int,
+        max_library_body_bytes: int = 64 * 1024,
+    ) -> None:
         self.app = app
         self.max_storyboard_body_bytes = max_storyboard_body_bytes
+        self.max_library_body_bytes = max_library_body_bytes
 
     async def __call__(
         self,
@@ -160,9 +180,18 @@ class _RequestBoundaryMiddleware:
             )
             return
 
-        if method != "POST" or scope.get("path") != self._STORYBOARD_CREATE_PATH:
+        path = scope.get("path")
+        if method != "POST" or path not in {
+            self._STORYBOARD_CREATE_PATH,
+            self._STORYBOARD_LIBRARY_CREATE_PATH,
+        }:
             await self.app(scope, receive, send)
             return
+        max_body_bytes = (
+            self.max_storyboard_body_bytes
+            if path == self._STORYBOARD_CREATE_PATH
+            else self.max_library_body_bytes
+        )
 
         content_lengths = self._header_values(scope, b"content-length")
         if content_lengths:
@@ -190,7 +219,7 @@ class _RequestBoundaryMiddleware:
                     message="Content-Length 格式不正確。",
                 )
                 return
-            if content_length > self.max_storyboard_body_bytes:
+            if content_length > max_body_bytes:
                 await self._reject_too_large(scope, receive, send)
                 return
 
@@ -204,7 +233,7 @@ class _RequestBoundaryMiddleware:
                 body = message.get("body", b"")
                 if isinstance(body, bytes):
                     received_bytes += len(body)
-                if received_bytes > self.max_storyboard_body_bytes:
+                if received_bytes > max_body_bytes:
                     raise _RequestBodyTooLarge
             return message
 
@@ -233,7 +262,7 @@ class _RequestBoundaryMiddleware:
             send,
             status_code=413,
             code="WORKFLOW_REQUEST_TOO_LARGE",
-            message="圖片上傳請求超過安全大小上限。",
+            message="工作請求超過安全大小上限。",
         )
 
     @staticmethod
@@ -314,9 +343,11 @@ def create_gateway_app(
     configured_workflow_adapter = StoryboardWorkflowAdapter(
         configured_workflow_settings
     )
+    configured_asset_library = AssetLibraryService(configured_workflow_settings)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        await configured_asset_library.start()
         runtime_client = configured_client or CodexAppServerClient(configured_settings)
         runtime_comfyui_client = configured_comfyui_client or HttpComfyUIClient(
             configured_workflow_settings
@@ -332,6 +363,7 @@ def create_gateway_app(
             MockGatewayCatalogProvider(),
         )
         app.state.workflow_service = workflow_service
+        app.state.asset_library_service = configured_asset_library
         try:
             yield
         finally:
@@ -369,10 +401,15 @@ def create_gateway_app(
         cast(ExceptionHandler, _handle_workflow_error),
     )
     app.add_exception_handler(
+        AssetLibraryError,
+        cast(ExceptionHandler, _handle_asset_library_error),
+    )
+    app.add_exception_handler(
         RequestValidationError,
         cast(ExceptionHandler, _handle_validation_error),
     )
     app.include_router(gateway_router)
+    app.include_router(asset_router)
     app.include_router(workflow_router)
 
     frontend_root = configured_settings.frontend_root

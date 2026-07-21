@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import json
+import shutil
 import socket
 import threading
 import time
@@ -13,6 +14,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from app.core.gateway_settings import GatewaySettings
+from app.core.workflow_settings import WorkflowSettings
 from app.gateway_main import create_gateway_app
 from app.services.codex_gateway.client import (
     CodexClientStatus,
@@ -297,16 +299,191 @@ class StoryboardWorkflowRouteMock:
         route.fulfill(status=404, body="not found")
 
 
+class StoryboardLibraryRouteMock:
+    """提供固定圖庫與依角色數量決定 B1／B2 的 browser mock。"""
+
+    def __init__(self) -> None:
+        self.character_ids = tuple(f"char_{index:032x}" for index in range(1, 4))
+        self.scene_ids = tuple(f"scene_{index:032x}" for index in range(1, 3))
+        self.create_requests: list[dict[str, object]] = []
+
+    def _asset_payload(self) -> dict[str, object]:
+        characters: list[dict[str, object]] = []
+        for index, asset_id in enumerate(self.character_ids, start=1):
+            view_root = f"/api/v1/gateway/assets/characters/{asset_id}"
+            characters.append(
+                {
+                    "asset_id": asset_id,
+                    "name": f"圖庫角色 {index}",
+                    "description": f"角色 {index} 的固定四視圖。",
+                    "created_at": f"2026-07-{index:02d}T08:00:00Z",
+                    "views": {
+                        view: f"{view_root}/{view}"
+                        for view in ("front", "left", "right", "back")
+                    },
+                }
+            )
+        scenes = [
+            {
+                "asset_id": asset_id,
+                "name": f"圖庫場景 {index}",
+                "description": f"場景 {index} 的固定參考圖。",
+                "created_at": f"2026-07-{index + 3:02d}T08:00:00Z",
+                "image_url": (f"/api/v1/gateway/assets/scenes/{asset_id}/image"),
+            }
+            for index, asset_id in enumerate(self.scene_ids, start=1)
+        ]
+        return {"characters": characters, "scenes": scenes}
+
+    @staticmethod
+    def _candidate(
+        run_number: int,
+        candidate_number: int,
+        *,
+        is_dual: bool,
+    ) -> dict[str, object]:
+        candidate_id = f"cand_{run_number * 16 + candidate_number:032x}"
+        run_id = f"run_{run_number:032x}"
+        b1_seed = (7_100 if is_dual else 8_100) + candidate_number
+        b2_seed = 7_200 + candidate_number if is_dual else None
+        return {
+            "candidate_id": candidate_id,
+            "seed": b2_seed if b2_seed is not None else b1_seed,
+            "stage_seeds": {"b1": b1_seed, "b2": b2_seed},
+            "status": "completed",
+            "image_url": (
+                f"/api/v1/gateway/workflows/storyboards/{run_id}/"
+                f"candidates/{candidate_id}/image"
+            ),
+            "download_url": (
+                f"/api/v1/gateway/workflows/storyboards/{run_id}/"
+                f"candidates/{candidate_id}/download"
+            ),
+            "error": None,
+        }
+
+    def _run_payload(
+        self,
+        request_payload: dict[str, object],
+    ) -> dict[str, object]:
+        character_asset_ids = request_payload.get("character_asset_ids")
+        is_dual = (
+            isinstance(character_asset_ids, list) and len(character_asset_ids) == 2
+        )
+        raw_candidate_count = request_payload.get("candidate_count")
+        candidate_count = (
+            raw_candidate_count
+            if isinstance(raw_candidate_count, int) and 1 <= raw_candidate_count <= 3
+            else 1
+        )
+        run_number = len(self.create_requests)
+        return {
+            "run_id": f"run_{run_number:032x}",
+            "status": "awaiting_selection",
+            "workflow_route": (
+                "dual_character_b1_b2" if is_dual else "single_character_b1"
+            ),
+            "candidates": [
+                self._candidate(
+                    run_number,
+                    candidate_number,
+                    is_dual=is_dual,
+                )
+                for candidate_number in range(1, candidate_count + 1)
+            ],
+            "selected_candidate_id": None,
+            "upscale": {
+                "status": "idle",
+                "image_url": None,
+                "download_url": None,
+                "error": None,
+            },
+        }
+
+    @staticmethod
+    def _fulfill_json(
+        route: Route,
+        payload: dict[str, object],
+        *,
+        status: int = 200,
+    ) -> None:
+        route.fulfill(
+            status=status,
+            content_type="application/json",
+            body=json.dumps(payload),
+        )
+
+    def handle(self, route: Route) -> None:
+        request = route.request
+        path = urlsplit(request.url).path
+        method = request.method
+
+        if method == "GET" and path == "/api/v1/gateway/assets":
+            self._fulfill_json(route, self._asset_payload())
+            return
+
+        if method == "GET" and path.startswith("/api/v1/gateway/assets/"):
+            route.fulfill(
+                status=200,
+                content_type="image/png",
+                body=ONE_PIXEL_PNG,
+            )
+            return
+
+        if method == "POST" and path == (
+            "/api/v1/gateway/workflows/storyboards/from-library"
+        ):
+            payload = _json_object(request)
+            self.create_requests.append({"path": path, "json": payload})
+            self._fulfill_json(
+                route,
+                self._run_payload(payload),
+                status=202,
+            )
+            return
+
+        if method == "GET" and path.endswith(("/image", "/download")):
+            route.fulfill(
+                status=200,
+                content_type="image/png",
+                body=ONE_PIXEL_PNG,
+            )
+            return
+
+        route.fulfill(status=404, body="not found")
+
+
 @contextmanager
 def _run_gateway_server(
     fake: BrowserFakeCodexClient,
+    temporary_repo_root: Path,
 ) -> Iterator[str]:
     settings = GatewaySettings(
         repo_root=REPO_ROOT,
         frontend_root=REPO_ROOT / "frontend/gateway",
         codex_cwd=REPO_ROOT,
     )
-    app = create_gateway_app(settings, client=fake)
+    temporary_workflow_root = temporary_repo_root / "workflows"
+    temporary_workflow_root.mkdir(parents=True)
+    for filename in (
+        "wf_dual_B1.json",
+        "wf_dual_B2.json",
+        "wf10_upscale_opt2.json",
+    ):
+        shutil.copy2(
+            REPO_ROOT / "docs/workflows" / filename,
+            temporary_workflow_root / filename,
+        )
+    workflow_settings = WorkflowSettings(
+        repo_root=temporary_repo_root,
+        workflow_root=temporary_workflow_root,
+        asset_library_root=temporary_repo_root / "assets",
+    )
+    app = create_gateway_app(
+        settings,
+        client=fake,
+        workflow_settings=workflow_settings,
+    )
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server_socket.bind(("127.0.0.1", 0))
@@ -367,7 +544,7 @@ def test_gateway_page_generation_confirmation_history_and_responsive_layout(
 ) -> None:
     fake = BrowserFakeCodexClient()
     with (
-        _run_gateway_server(fake) as base_url,
+        _run_gateway_server(fake, tmp_path) as base_url,
         sync_playwright() as playwright,
     ):
         browser = playwright.chromium.launch(headless=True)
@@ -532,6 +709,195 @@ def test_gateway_page_generation_confirmation_history_and_responsive_layout(
         browser.close()
 
 
+def test_storyboard_gallery_preserves_character_order_and_reports_routes(
+    tmp_path: Path,
+) -> None:
+    fake = BrowserFakeCodexClient()
+    library = StoryboardLibraryRouteMock()
+
+    with (
+        _run_gateway_server(fake, tmp_path) as base_url,
+        sync_playwright() as playwright,
+    ):
+        browser = playwright.chromium.launch(headless=True)
+        context = browser.new_context(
+            viewport={"width": 1280, "height": 900},
+            locale="zh-TW",
+        )
+        page = context.new_page()
+        page.route("**/api/v1/gateway/assets**", library.handle)
+        page.route("**/api/v1/gateway/workflows/**", library.handle)
+        page.goto(base_url, wait_until="networkidle")
+
+        character_history = page.locator(
+            "#character-history-list .character-asset-card"
+        )
+        character_history.first.wait_for(state="visible")
+        assert page.locator("#character-history").get_attribute("data-state") == (
+            "ready"
+        )
+        assert character_history.count() == 3
+        assert character_history.locator(".history-character-views img").count() == 12
+        assert character_history.locator(
+            ".history-asset-copy strong"
+        ).all_inner_texts() == [
+            "圖庫角色 1",
+            "圖庫角色 2",
+            "圖庫角色 3",
+        ]
+        character_view_sources = character_history.locator(
+            ".history-character-views img"
+        ).evaluate_all("images => images.map((image) => image.src)")
+        assert all(
+            source.startswith(f"{base_url}/api/v1/gateway/assets/characters/")
+            for source in character_view_sources
+        )
+
+        page.get_by_role("tab", name="生成場景").click()
+        scene_history = page.locator("#scene-history-list .scene-asset-card")
+        scene_history.first.wait_for(state="visible")
+        assert page.locator("#scene-history").get_attribute("data-state") == "ready"
+        assert scene_history.count() == 2
+        assert scene_history.locator(
+            ".history-asset-copy strong"
+        ).all_inner_texts() == [
+            "圖庫場景 1",
+            "圖庫場景 2",
+        ]
+        assert all(
+            source.startswith(f"{base_url}/api/v1/gateway/assets/scenes/")
+            for source in scene_history.locator("img").evaluate_all(
+                "images => images.map((image) => image.src)"
+            )
+        )
+
+        page.get_by_role("tab", name="生成分鏡").click()
+        assert page.locator("#storyboard-source-library").is_checked()
+        assert page.locator("#storyboard-library-source").is_visible()
+        assert page.locator("#storyboard-upload-source").is_hidden()
+
+        character_inputs = page.locator('input[name="storyboard-character-asset"]')
+        scene_inputs = page.locator('input[name="storyboard-scene-asset"]')
+        assert character_inputs.count() == 3
+        assert scene_inputs.count() == 2
+
+        second_character_id = library.character_ids[1]
+        first_character_id = library.character_ids[0]
+        third_character_id = library.character_ids[2]
+        page.locator(
+            f'.storyboard-asset-card[data-asset-id="{second_character_id}"]'
+        ).click()
+        page.locator(
+            f'.storyboard-asset-card[data-asset-id="{first_character_id}"]'
+        ).click()
+
+        second_character_input = page.locator(
+            f'input[name="storyboard-character-asset"][value="{second_character_id}"]'
+        )
+        first_character_input = page.locator(
+            f'input[name="storyboard-character-asset"][value="{first_character_id}"]'
+        )
+        third_character_input = page.locator(
+            f'input[name="storyboard-character-asset"][value="{third_character_id}"]'
+        )
+        assert second_character_input.is_checked()
+        assert first_character_input.is_checked()
+        assert "第 1 位角色" in (
+            second_character_input.get_attribute("aria-label") or ""
+        )
+        assert "第 2 位角色" in (
+            first_character_input.get_attribute("aria-label") or ""
+        )
+        assert third_character_input.is_disabled()
+        assert page.locator("#storyboard-character-selection-status").inner_text() == (
+            "已選 2 / 2 位角色，已達上限；系統會依序使用 B1 → B2。"
+        )
+
+        selected_scene_id = library.scene_ids[1]
+        page.locator(
+            f'.storyboard-asset-card[data-asset-id="{selected_scene_id}"]'
+        ).click()
+        assert page.locator(
+            f'input[name="storyboard-scene-asset"][value="{selected_scene_id}"]'
+        ).is_checked()
+        assert page.locator("#storyboard-scene-selection-status").inner_text() == (
+            "已選擇 1 個場景。"
+        )
+
+        composition_prompt = "讓兩位角色依序站在場景中，保留外觀與背景構圖。"
+        page.locator("#storyboard-prompt").fill(composition_prompt)
+        page.locator("#storyboard-candidate-count").select_option("2")
+        page.locator("#generate-storyboard-button").click()
+        page.get_by_text(
+            "實際路徑：雙角色 B1 → B2",
+            exact=True,
+        ).wait_for()
+
+        dual_payload = {
+            "prompt": composition_prompt,
+            "candidate_count": 2,
+            "character_asset_ids": [second_character_id, first_character_id],
+            "scene_asset_id": selected_scene_id,
+        }
+        assert library.create_requests == [
+            {
+                "path": "/api/v1/gateway/workflows/storyboards/from-library",
+                "json": dual_payload,
+            }
+        ]
+        assert set(dual_payload) == {
+            "prompt",
+            "candidate_count",
+            "character_asset_ids",
+            "scene_asset_id",
+        }
+        assert not any(
+            forbidden in key
+            for key in dual_payload
+            for forbidden in ("workflow", "node", "seed")
+        )
+        assert (
+            page.locator("#storyboard-route-status").get_attribute("data-route")
+            == "dual_character_b1_b2"
+        )
+        page.get_by_text("Seed 7101 → 7201", exact=True).wait_for()
+        assert page.locator("#storyboard-candidate-grid .candidate-card").count() == 2
+
+        page.locator(
+            f'.storyboard-asset-card[data-asset-id="{first_character_id}"]'
+        ).click()
+        assert not first_character_input.is_checked()
+        assert not third_character_input.is_disabled()
+        assert (
+            page.locator("#storyboard-character-selection-status").inner_text()
+            == "已選 1 / 2 位角色；系統會使用單角色 B1。"
+        )
+
+        page.locator("#generate-storyboard-button").click()
+        page.get_by_text("實際路徑：單角色 B1", exact=True).wait_for()
+        single_payload = {
+            "prompt": composition_prompt,
+            "candidate_count": 2,
+            "character_asset_ids": [second_character_id],
+            "scene_asset_id": selected_scene_id,
+        }
+        assert library.create_requests[1] == {
+            "path": "/api/v1/gateway/workflows/storyboards/from-library",
+            "json": single_payload,
+        }
+        assert single_payload["character_asset_ids"] == [second_character_id]
+        assert (
+            page.locator("#storyboard-route-status").get_attribute("data-route")
+            == "single_character_b1"
+        )
+        page.get_by_text("Seed 8101", exact=True).wait_for()
+
+        assert fake.thread_count == 0
+        assert fake.turn_count == 0
+        context.close()
+        browser.close()
+
+
 def test_storyboard_workflow_selects_one_candidate_before_4k_and_handles_error(
     tmp_path: Path,
 ) -> None:
@@ -545,7 +911,7 @@ def test_storyboard_workflow_selects_one_candidate_before_4k_and_handles_error(
     replacement_scene_path.write_bytes(ONE_PIXEL_PNG)
 
     with (
-        _run_gateway_server(fake) as base_url,
+        _run_gateway_server(fake, tmp_path) as base_url,
         sync_playwright() as playwright,
     ):
         browser = playwright.chromium.launch(headless=True)

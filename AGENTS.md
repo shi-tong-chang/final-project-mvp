@@ -3,17 +3,18 @@
 ## 1. 專案與知識順序
 
 本專案是 loopback-only 的故事視覺工作台。現階段提供 typed catalog、
-二十種同角色風格展示與提示詞複製，以及由 FastAPI 受控執行的單角色
-分鏡候選與「使用者選定後才放大」4K 流程。
+二十種同角色風格展示、本機角色／場景素材庫，以及由 FastAPI 受控執行的
+單角色或雙角色分鏡候選與「使用者選定後才放大」4K 流程。
 
 知識優先順序：
 
 1. `docs/PROJECT_SPEC.md`
 2. `docs/tasks/CLONE_TO_RUN.md`
 3. `docs/tasks/STORYBOARD_WORKFLOW_INTEGRATION.md`
-4. `docs/README_repro.md`
-5. `docs/tasks/CODEX_GATEWAY_V2.md`（既有展示里程碑）
-6. 本文件
+4. `docs/tasks/ASSET_LIBRARY_AND_DUAL_STORYBOARD.md`
+5. `docs/README_repro.md`
+6. `docs/tasks/CODEX_GATEWAY_V2.md`（既有展示里程碑）
+7. 本文件
 
 Runtime machine-readable authority 是 `runtime/runtime-lock.json` 與
 `runtime/models.lock.json`。文件不得用未釘版的 branch、`latest` URL、
@@ -111,6 +112,10 @@ developer_instructions = """
   的 4K。
 - 目前既有分鏡與 4K 直接由 typed FastAPI／ComfyUI adapter 執行，不建立
   Codex thread／turn。
+- Agent 產生正式角色或場景後，必須透過 repository 提供的 trusted
+  registration CLI 寫入 `.runtime/asset-library/`；不得自行拼接公開 URL、
+  直接改 metadata，或把生成資產提交進 Git。角色資產需有前／左／右／後
+  四視圖，場景資產需有一張定稿圖。
 
 ## 5. 不可破壞的產品與安全邊界
 
@@ -129,12 +134,15 @@ developer_instructions = """
 9. 正式預覽 URL 只允許安全的同源絕對路徑，不接受外站或本機檔案 URL。
 10. Workflow JSON 只由 server 固定 allowlist 載入；Browser 不得提交
     workflow、node ID、模型、seed、ComfyUI 路徑或 server filename。
+    Browser 只提交 1–2 個角色 asset ID 與一個場景 asset ID；server 必須
+    依角色數量固定選擇 B1 或 B1→B2，不接受 client 覆寫路由。
 11. ComfyUI 只允許 loopback HTTP；禁止 `/free`、全域清 queue、Manager
     自動安裝／更新，以及修改 adopted ComfyUI。
 12. 所有 mutation 拒絕跨站 Browser request；圖片 body、GPU queue、run
     數與記憶體圖片總量都有 hard cap。
-13. 本階段不引入資料庫或舊 Storyboard 引擎；資產與任務狀態由單一
-    Gateway process 暫存，重啟後不保留歷史。
+13. 本階段不引入資料庫或舊 Storyboard 引擎；角色／場景資產持久化在
+    Git-ignored `.runtime/asset-library/`，分鏡 run／candidate 狀態仍只由
+    單一 Gateway process 暫存，重啟後不保留工作進度。
 14. 不得聲稱已在目標 RTX 5070 Ti 完成端到端重放，除非有本次實跑記錄、
     版本摘要與結果證據。來源機黃金圖不等於新機驗證。
 

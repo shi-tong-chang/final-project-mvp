@@ -398,6 +398,7 @@ def test_active_workflow_model_loaders_are_exactly_covered_by_lock() -> None:
     actual: set[str] = set()
     for relative in (
         "docs/workflows/wf_dual_B1.json",
+        "docs/workflows/wf_dual_B2.json",
         "docs/workflows/wf10_upscale_opt2.json",
     ):
         graph = json.loads((REPO_ROOT / relative).read_bytes())
@@ -412,5 +413,6 @@ def test_active_workflow_model_loaders_are_exactly_covered_by_lock() -> None:
     assert actual == {model.filename for model in lock.models}
     assert {required for model in lock.models for required in model.required_by} == {
         "docs/workflows/wf_dual_B1.json",
+        "docs/workflows/wf_dual_B2.json",
         "docs/workflows/wf10_upscale_opt2.json",
     }

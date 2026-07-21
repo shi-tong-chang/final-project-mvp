@@ -26,6 +26,7 @@ class WorkflowSettings(BaseSettings):
 
     repo_root: Path = Field(default=DEFAULT_GATEWAY_REPO_ROOT)
     workflow_root: Path = Field(default=Path("docs/workflows"))
+    asset_library_root: Path = Field(default=Path(".runtime/asset-library"))
     comfyui_base_url: str = Field(default="http://127.0.0.1:8188", max_length=256)
     connect_timeout_seconds: float = Field(default=5.0, gt=0, le=30)
     request_timeout_seconds: float = Field(default=30.0, gt=0, le=120)
@@ -78,15 +79,17 @@ class WorkflowSettings(BaseSettings):
 
     @model_validator(mode="after")
     def normalize_paths(self) -> WorkflowSettings:
-        """固定 workflow 只能從 repository 內讀取。"""
+        """固定 workflow 與本機素材只能位於 repository 內。"""
 
         self.repo_root = self.repo_root.expanduser().resolve()
-        workflow_root = self.workflow_root.expanduser()
-        if not workflow_root.is_absolute():
-            workflow_root = self.repo_root / workflow_root
-        self.workflow_root = workflow_root.resolve()
-        if not self.workflow_root.is_relative_to(self.repo_root):
-            raise ValueError("workflow_root 必須位於專案根目錄內")
+        for field_name in ("workflow_root", "asset_library_root"):
+            configured_root = getattr(self, field_name).expanduser()
+            if not configured_root.is_absolute():
+                configured_root = self.repo_root / configured_root
+            normalized_root = configured_root.resolve()
+            if not normalized_root.is_relative_to(self.repo_root):
+                raise ValueError(f"{field_name} 必須位於專案根目錄內")
+            setattr(self, field_name, normalized_root)
         return self
 
     @property

@@ -15,7 +15,8 @@
       },
       "license": "Apache-2.0",
       "required_by": [
-        "docs/workflows/wf_dual_B1.json"
+        "docs/workflows/wf_dual_B1.json",
+        "docs/workflows/wf_dual_B2.json"
       ]
     },
     {
@@ -32,7 +33,8 @@
       },
       "license": "Apache-2.0",
       "required_by": [
-        "docs/workflows/wf_dual_B1.json"
+        "docs/workflows/wf_dual_B1.json",
+        "docs/workflows/wf_dual_B2.json"
       ]
     },
     {
@@ -49,7 +51,8 @@
       },
       "license": "Apache-2.0",
       "required_by": [
-        "docs/workflows/wf_dual_B1.json"
+        "docs/workflows/wf_dual_B1.json",
+        "docs/workflows/wf_dual_B2.json"
       ]
     },
     {

@@ -207,30 +207,41 @@
               id="character-history"
               class="history-rail"
               aria-labelledby="character-history-title"
-              data-state="empty"
+              data-state="loading"
             >
               <div class="history-rail-heading">
                 <div>
                   <p>HISTORY</p>
-                  <h3 id="character-history-title">已生成角色</h3>
+                  <h3 id="character-history-title">角色圖庫</h3>
                 </div>
-                <span class="history-count" aria-label="目前零筆角色紀錄">0</span>
+                <span
+                  id="character-history-count"
+                  class="history-count"
+                  aria-label="目前零筆角色資產"
+                  >0</span
+                >
               </div>
               <div
                 id="character-history-list"
                 class="history-list"
-                aria-live="polite"
               >
-                <div class="history-empty">
+                <div class="history-empty history-loading">
                   <span
                     class="history-empty-visual history-character-visual"
                     aria-hidden="true"
                   ></span>
-                  <strong>尚無角色紀錄</strong>
-                  <span>角色 Agent 完成圖片並命名後，縮圖會依時間顯示在這裡。</span>
+                  <strong>正在讀取角色圖庫</strong>
+                  <span>正在讀取已儲存的角色四視圖；沒有資產時會保留空狀態。</span>
                 </div>
               </div>
-              <p class="history-rail-note">HISTORY SLOT · 待 Agent 接線</p>
+              <p
+                id="character-history-status"
+                class="history-rail-note"
+                role="status"
+                aria-live="polite"
+              >
+                LIBRARY · 載入中
+              </p>
             </aside>
           </form>
         </section>
@@ -394,30 +405,41 @@
               id="scene-history"
               class="history-rail"
               aria-labelledby="scene-history-title"
-              data-state="empty"
+              data-state="loading"
             >
               <div class="history-rail-heading">
                 <div>
                   <p>HISTORY</p>
-                  <h3 id="scene-history-title">已生成場景</h3>
+                  <h3 id="scene-history-title">場景圖庫</h3>
                 </div>
-                <span class="history-count" aria-label="目前零筆場景紀錄">0</span>
+                <span
+                  id="scene-history-count"
+                  class="history-count"
+                  aria-label="目前零筆場景資產"
+                  >0</span
+                >
               </div>
               <div
                 id="scene-history-list"
                 class="history-list"
-                aria-live="polite"
               >
-                <div class="history-empty">
+                <div class="history-empty history-loading">
                   <span
                     class="history-empty-visual history-scene-visual"
                     aria-hidden="true"
                   ></span>
-                  <strong>尚無場景紀錄</strong>
-                  <span>場景 Agent 完成圖片並命名後，縮圖會依時間顯示在這裡。</span>
+                  <strong>正在讀取場景圖庫</strong>
+                  <span>正在讀取已儲存的場景圖片；沒有資產時會保留空狀態。</span>
                 </div>
               </div>
-              <p class="history-rail-note">HISTORY SLOT · 待 Agent 接線</p>
+              <p
+                id="scene-history-status"
+                class="history-rail-note"
+                role="status"
+                aria-live="polite"
+              >
+                LIBRARY · 載入中
+              </p>
             </aside>
           </form>
         </section>
@@ -435,7 +457,7 @@
               <p class="section-number">03 / STORYBOARD</p>
               <h2>合成人物與場景分鏡</h2>
               <p>
-                上傳一張場景圖與角色的單一正面參考，先產生最多三張工作解析度候選；選定後才會放大該張分鏡。
+                從本機圖庫選擇 1–2 位角色與 1 個場景，或改用單角色手動上傳；先產生最多三張工作解析度候選，選定後才會放大。
               </p>
             </div>
             <span class="phase-tag">本機工作流</span>
@@ -458,33 +480,129 @@
                     >
                   </div>
 
-                  <div class="workflow-file-grid">
-                    <label class="workflow-file-field" for="storyboard-scene-file">
-                      <span>場景圖</span>
-                      <input
-                        id="storyboard-scene-file"
-                        name="scene_image"
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp"
-                        required
-                      />
-                      <small>第一張參考：保留構圖、視角與場景光線。</small>
-                    </label>
-                    <label
-                      class="workflow-file-field"
-                      for="storyboard-character-file"
+                  <fieldset class="storyboard-source-mode">
+                    <legend>素材來源</legend>
+                    <div class="source-mode-options">
+                      <label>
+                        <input
+                          id="storyboard-source-library"
+                          type="radio"
+                          name="storyboard-source-mode"
+                          value="library"
+                          checked
+                        />
+                        <span>從圖庫選擇</span>
+                      </label>
+                      <label>
+                        <input
+                          id="storyboard-source-upload"
+                          type="radio"
+                          name="storyboard-source-mode"
+                          value="upload"
+                        />
+                        <span>手動上傳</span>
+                      </label>
+                    </div>
+                    <p class="field-help">
+                      圖庫模式可選 1–2 位角色與恰好 1 個場景；系統依角色數量自動安排合成路徑，Browser 不提供 workflow 選單。
+                    </p>
+                  </fieldset>
+
+                  <div id="storyboard-library-source" class="storyboard-library-source">
+                    <fieldset
+                      id="storyboard-character-library-picker"
+                      class="storyboard-asset-picker"
                     >
-                      <span>角色正面參考</span>
-                      <input
-                        id="storyboard-character-file"
-                        name="character_image"
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp"
-                        required
-                      />
-                      <small>請從四視圖裁出單一正面圖，不要上傳整張四視圖。</small>
-                    </label>
+                      <legend>選擇角色（1–2 位）</legend>
+                      <p class="field-help">
+                        點選順序就是角色加入順序；第一位先進入場景，第二位由系統接續處理。
+                      </p>
+                      <div
+                        id="storyboard-character-asset-grid"
+                        class="storyboard-asset-grid"
+                        data-state="loading"
+                        aria-describedby="storyboard-character-selection-status"
+                      ></div>
+                      <p
+                        id="storyboard-character-selection-status"
+                        class="workflow-status"
+                        role="status"
+                        aria-live="polite"
+                        tabindex="-1"
+                      >
+                        正在讀取角色圖庫…
+                      </p>
+                    </fieldset>
+
+                    <fieldset
+                      id="storyboard-scene-library-picker"
+                      class="storyboard-asset-picker"
+                    >
+                      <legend>選擇場景（恰好 1 個）</legend>
+                      <p class="field-help">場景會作為第一張參考，保留構圖、視角與光線。</p>
+                      <div
+                        id="storyboard-scene-asset-grid"
+                        class="storyboard-asset-grid scene-assets"
+                        data-state="loading"
+                        aria-describedby="storyboard-scene-selection-status"
+                      ></div>
+                      <p
+                        id="storyboard-scene-selection-status"
+                        class="workflow-status"
+                        role="status"
+                        aria-live="polite"
+                        tabindex="-1"
+                      >
+                        正在讀取場景圖庫…
+                      </p>
+                    </fieldset>
                   </div>
+
+                  <div
+                    id="storyboard-upload-source"
+                    class="storyboard-upload-source"
+                    hidden
+                  >
+                    <p class="upload-fallback-note">
+                      手動上傳沿用目前可執行的單角色流程；請提供一張場景圖與一張角色正面參考。
+                    </p>
+                    <div class="workflow-file-grid">
+                      <label class="workflow-file-field" for="storyboard-scene-file">
+                        <span>場景圖</span>
+                        <input
+                          id="storyboard-scene-file"
+                          name="scene_image"
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp"
+                          required
+                        />
+                        <small>第一張參考：保留構圖、視角與場景光線。</small>
+                      </label>
+                      <label
+                        class="workflow-file-field"
+                        for="storyboard-character-file"
+                      >
+                        <span>角色正面參考</span>
+                        <input
+                          id="storyboard-character-file"
+                          name="character_image"
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp"
+                          required
+                        />
+                        <small>請從四視圖裁出單一正面圖，不要上傳整張四視圖。</small>
+                      </label>
+                    </div>
+                  </div>
+
+                  <p
+                    id="storyboard-route-status"
+                    class="workflow-route-status"
+                    role="status"
+                    aria-live="polite"
+                  >
+                    系統會在送出後回報實際使用的合成路徑。
+                  </p>
 
                   <label for="storyboard-prompt">合成描述</label>
                   <textarea
@@ -658,7 +776,7 @@
                 <p>目前結果</p>
                 <h3 id="storyboard-result-title">尚未產生候選</h3>
                 <span id="storyboard-result-description"
-                  >請先準備場景、單一角色正面參考與詳細合成描述。</span
+                  >請先從圖庫選擇角色與場景，或改用單角色手動上傳，再補上詳細合成描述。</span
                 >
               </div>
               <div id="storyboard-downloads" class="storyboard-downloads" hidden>

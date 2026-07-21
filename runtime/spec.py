@@ -421,6 +421,7 @@ def _workflow_path(value: object, label: str) -> str:
     encoded = _source_path(value, label)
     if encoded not in {
         "docs/workflows/wf_dual_B1.json",
+        "docs/workflows/wf_dual_B2.json",
         "docs/workflows/wf10_upscale_opt2.json",
     }:
         raise RuntimeLockError(f"{label} 不是現役 workflow")

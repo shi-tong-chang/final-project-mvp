@@ -7,6 +7,8 @@ const WORKFLOW_REQUEST_TIMEOUT_MS = 60_000;
 const WORKFLOW_POLL_INTERVAL_MS = 1_000;
 const WORKFLOW_POLL_MAX_RETRIES = 5;
 const WORKFLOW_POLL_MAX_DELAY_MS = 15_000;
+const ASSET_LIBRARY_LIMIT = 100;
+const MAX_STORYBOARD_CHARACTERS = 2;
 const tabOrder = ["character", "scene", "storyboard"];
 const horizontalTabsMedia = window.matchMedia("(max-width: 680px)");
 
@@ -54,6 +56,14 @@ const elements = {
   characterGenerationStatus: document.querySelector(
     "#character-generation-status",
   ),
+  characterHistory: document.querySelector("#character-history"),
+  characterHistoryCount: document.querySelector(
+    "#character-history-count",
+  ),
+  characterHistoryList: document.querySelector("#character-history-list"),
+  characterHistoryStatus: document.querySelector(
+    "#character-history-status",
+  ),
   sceneForm: document.querySelector("#scene-generation-form"),
   scenePrompt: document.querySelector("#scene-prompt"),
   sceneLight: document.querySelector("#scene-light"),
@@ -64,6 +74,10 @@ const elements = {
   sceneGenerationStatus: document.querySelector(
     "#scene-generation-status",
   ),
+  sceneHistory: document.querySelector("#scene-history"),
+  sceneHistoryCount: document.querySelector("#scene-history-count"),
+  sceneHistoryList: document.querySelector("#scene-history-list"),
+  sceneHistoryStatus: document.querySelector("#scene-history-status"),
   sceneHeroArt: document.querySelector("#scene-hero-art"),
   selectedSceneDirection: document.querySelector(
     "#selected-scene-direction",
@@ -74,6 +88,33 @@ const elements = {
   storyboardSceneFile: document.querySelector("#storyboard-scene-file"),
   storyboardCharacterFile: document.querySelector(
     "#storyboard-character-file",
+  ),
+  storyboardSourceLibrary: document.querySelector(
+    "#storyboard-source-library",
+  ),
+  storyboardSourceUpload: document.querySelector(
+    "#storyboard-source-upload",
+  ),
+  storyboardLibrarySource: document.querySelector(
+    "#storyboard-library-source",
+  ),
+  storyboardUploadSource: document.querySelector(
+    "#storyboard-upload-source",
+  ),
+  storyboardCharacterAssetGrid: document.querySelector(
+    "#storyboard-character-asset-grid",
+  ),
+  storyboardSceneAssetGrid: document.querySelector(
+    "#storyboard-scene-asset-grid",
+  ),
+  storyboardCharacterSelectionStatus: document.querySelector(
+    "#storyboard-character-selection-status",
+  ),
+  storyboardSceneSelectionStatus: document.querySelector(
+    "#storyboard-scene-selection-status",
+  ),
+  storyboardRouteStatus: document.querySelector(
+    "#storyboard-route-status",
   ),
   storyboardPrompt: document.querySelector("#storyboard-prompt"),
   storyboardCandidateCount: document.querySelector(
@@ -142,6 +183,7 @@ const elements = {
 const workflowState = {
   runId: "",
   runStatus: "",
+  workflowRoute: "",
   candidates: [],
   activeCandidateId: "",
   confirmedCandidateId: "",
@@ -155,6 +197,18 @@ const workflowState = {
   selectionLocked: false,
   upscaleBusy: false,
   upscaleCompleted: false,
+};
+
+const assetLibraryState = {
+  status: "loading",
+  characters: [],
+  scenes: [],
+};
+
+const storyboardSourceState = {
+  mode: "library",
+  characterAssetIds: [],
+  sceneAssetId: "",
 };
 
 class WorkflowRequestError extends Error {
@@ -322,6 +376,577 @@ function createPreviewImage(url, className) {
   image.decoding = "async";
   image.addEventListener("error", () => image.remove(), { once: true });
   return image;
+}
+
+function boundedText(value, fallback, maxLength = 500) {
+  const normalized = catalogText(value, fallback);
+  return normalized.slice(0, maxLength);
+}
+
+function assetIdentifier(value) {
+  if (typeof value !== "string") {
+    return "";
+  }
+  const normalized = value.trim();
+  return /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(normalized)
+    ? normalized
+    : "";
+}
+
+function createdAtText(value) {
+  if (typeof value !== "string" || !value.trim()) {
+    return "建立時間未提供";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "建立時間未提供";
+  }
+  return new Intl.DateTimeFormat("zh-TW", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+function normalizeCharacterAsset(value) {
+  const assetId = assetIdentifier(value?.asset_id);
+  const views = value?.views;
+  if (!assetId || !views || typeof views !== "object") {
+    return null;
+  }
+  const safeViews = {
+    front: safePreviewUrl(views.front),
+    left: safePreviewUrl(views.left),
+    right: safePreviewUrl(views.right),
+    back: safePreviewUrl(views.back),
+  };
+  if (Object.values(safeViews).some((url) => !url)) {
+    return null;
+  }
+  return {
+    assetId,
+    name: boundedText(value.name, "未命名角色", 120),
+    description: boundedText(value.description, "沒有角色說明。"),
+    createdAt: typeof value.created_at === "string" ? value.created_at : "",
+    views: safeViews,
+  };
+}
+
+function normalizeSceneAsset(value) {
+  const assetId = assetIdentifier(value?.asset_id);
+  const imageUrl = safePreviewUrl(value?.image_url);
+  if (!assetId || !imageUrl) {
+    return null;
+  }
+  return {
+    assetId,
+    name: boundedText(value.name, "未命名場景", 120),
+    description: boundedText(value.description, "沒有場景說明。"),
+    createdAt: typeof value.created_at === "string" ? value.created_at : "",
+    imageUrl,
+  };
+}
+
+function normalizeAssetList(values, normalizer) {
+  if (!Array.isArray(values)) {
+    return [];
+  }
+  const seen = new Set();
+  const normalized = [];
+  for (const value of values.slice(0, ASSET_LIBRARY_LIMIT)) {
+    const asset = normalizer(value);
+    if (!asset || seen.has(asset.assetId)) {
+      continue;
+    }
+    seen.add(asset.assetId);
+    normalized.push(asset);
+  }
+  return normalized;
+}
+
+function createAssetImage(url, alt, className) {
+  const image = createPreviewImage(url, className);
+  image.alt = alt;
+  return image;
+}
+
+function createHistoryMessage(kind, title, detail, state) {
+  const container = document.createElement("div");
+  container.className = `history-empty history-${state}`;
+  const visual = document.createElement("span");
+  visual.className =
+    `history-empty-visual history-${kind}-visual`;
+  visual.setAttribute("aria-hidden", "true");
+  const strong = document.createElement("strong");
+  strong.textContent = title;
+  const copy = document.createElement("span");
+  copy.textContent = detail;
+  container.append(visual, strong, copy);
+  return container;
+}
+
+function createCharacterHistoryCard(asset) {
+  const article = document.createElement("article");
+  article.className = "history-asset-card character-asset-card";
+  article.dataset.assetId = asset.assetId;
+
+  const hero = createAssetImage(
+    asset.views.front,
+    `角色「${asset.name}」正面預覽`,
+    "history-asset-hero",
+  );
+  const views = document.createElement("div");
+  views.className = "history-character-views";
+  for (const [view, label] of [
+    ["front", "前"],
+    ["left", "左"],
+    ["right", "右"],
+    ["back", "後"],
+  ]) {
+    const figure = document.createElement("figure");
+    const thumbnail = createAssetImage(
+      asset.views[view],
+      `角色「${asset.name}」${label}視圖`,
+      "history-view-thumbnail",
+    );
+    const caption = document.createElement("figcaption");
+    caption.textContent = label;
+    figure.append(thumbnail, caption);
+    views.append(figure);
+  }
+
+  const copy = document.createElement("div");
+  copy.className = "history-asset-copy";
+  const title = document.createElement("strong");
+  title.textContent = asset.name;
+  const description = document.createElement("span");
+  description.textContent = asset.description;
+  const time = document.createElement("time");
+  time.textContent = createdAtText(asset.createdAt);
+  if (asset.createdAt) {
+    time.dateTime = asset.createdAt;
+  }
+  copy.append(title, description, time);
+  article.append(hero, views, copy);
+  return article;
+}
+
+function createSceneHistoryCard(asset) {
+  const article = document.createElement("article");
+  article.className = "history-asset-card scene-asset-card";
+  article.dataset.assetId = asset.assetId;
+  const image = createAssetImage(
+    asset.imageUrl,
+    `場景「${asset.name}」預覽`,
+    "history-asset-hero scene-asset-image",
+  );
+  const copy = document.createElement("div");
+  copy.className = "history-asset-copy";
+  const title = document.createElement("strong");
+  title.textContent = asset.name;
+  const description = document.createElement("span");
+  description.textContent = asset.description;
+  const time = document.createElement("time");
+  time.textContent = createdAtText(asset.createdAt);
+  if (asset.createdAt) {
+    time.dateTime = asset.createdAt;
+  }
+  copy.append(title, description, time);
+  article.append(image, copy);
+  return article;
+}
+
+function renderHistoryRail(kind, items, state, errorMessage = "") {
+  const isCharacter = kind === "character";
+  const rail = isCharacter ? elements.characterHistory : elements.sceneHistory;
+  const count = isCharacter
+    ? elements.characterHistoryCount
+    : elements.sceneHistoryCount;
+  const list = isCharacter
+    ? elements.characterHistoryList
+    : elements.sceneHistoryList;
+  const status = isCharacter
+    ? elements.characterHistoryStatus
+    : elements.sceneHistoryStatus;
+  const noun = isCharacter ? "角色" : "場景";
+
+  rail.dataset.state = state;
+  count.textContent = String(items.length);
+  count.setAttribute("aria-label", `目前 ${items.length} 筆${noun}資產`);
+  if (state === "ready") {
+    list.replaceChildren(
+      ...items.map(
+        isCharacter ? createCharacterHistoryCard : createSceneHistoryCard,
+      ),
+    );
+    status.textContent = `LIBRARY · ${items.length} 筆已儲存${noun}`;
+    status.dataset.kind = "success";
+    return;
+  }
+  const isError = state === "error";
+  list.replaceChildren(
+    createHistoryMessage(
+      kind,
+      isError ? `${noun}圖庫載入失敗` : `尚無${noun}紀錄`,
+      isError
+        ? errorMessage || "暫時無法讀取圖庫；分鏡仍可改用手動上傳。"
+        : `${noun} Agent 完成圖片並命名後，資產會顯示在這裡。`,
+      state,
+    ),
+  );
+  status.textContent = isError ? "LIBRARY · 載入失敗" : "LIBRARY · 目前空白";
+  status.dataset.kind = isError ? "error" : "";
+}
+
+function assetById(items, assetId) {
+  return items.find((asset) => asset.assetId === assetId);
+}
+
+function createStoryboardCharacterCard(asset) {
+  const label = document.createElement("label");
+  label.className = "storyboard-asset-card";
+  label.dataset.assetId = asset.assetId;
+  const input = document.createElement("input");
+  input.type = "checkbox";
+  input.name = "storyboard-character-asset";
+  input.value = asset.assetId;
+  input.dataset.assetName = asset.name;
+  input.setAttribute(
+    "aria-describedby",
+    "storyboard-character-selection-status",
+  );
+  input.checked = storyboardSourceState.characterAssetIds.includes(
+    asset.assetId,
+  );
+
+  const visual = document.createElement("span");
+  visual.className = "storyboard-asset-visual character-reference";
+  visual.append(
+    createAssetImage(
+      asset.views.front,
+      `角色「${asset.name}」正面參考`,
+      "storyboard-asset-image",
+    ),
+  );
+  const order = document.createElement("span");
+  order.className = "asset-selection-order";
+  order.setAttribute("aria-hidden", "true");
+  const copy = document.createElement("span");
+  copy.className = "storyboard-asset-copy";
+  const title = document.createElement("strong");
+  title.textContent = asset.name;
+  const description = document.createElement("small");
+  description.textContent = asset.description;
+  copy.append(title, description);
+  label.append(input, visual, order, copy);
+  return label;
+}
+
+function createStoryboardSceneCard(asset) {
+  const label = document.createElement("label");
+  label.className = "storyboard-asset-card";
+  label.dataset.assetId = asset.assetId;
+  const input = document.createElement("input");
+  input.type = "radio";
+  input.name = "storyboard-scene-asset";
+  input.value = asset.assetId;
+  input.setAttribute(
+    "aria-describedby",
+    "storyboard-scene-selection-status",
+  );
+  input.checked = storyboardSourceState.sceneAssetId === asset.assetId;
+
+  const visual = document.createElement("span");
+  visual.className = "storyboard-asset-visual scene-reference";
+  visual.append(
+    createAssetImage(
+      asset.imageUrl,
+      `場景「${asset.name}」參考`,
+      "storyboard-asset-image",
+    ),
+  );
+  const copy = document.createElement("span");
+  copy.className = "storyboard-asset-copy";
+  const title = document.createElement("strong");
+  title.textContent = asset.name;
+  const description = document.createElement("small");
+  description.textContent = asset.description;
+  copy.append(title, description);
+  label.append(input, visual, copy);
+  return label;
+}
+
+function libraryCanCompose() {
+  return (
+    assetLibraryState.status === "ready" &&
+    assetLibraryState.characters.length > 0 &&
+    assetLibraryState.scenes.length > 0
+  );
+}
+
+function sourceControlsAreLocked() {
+  return (
+    workflowState.composeBusy ||
+    workflowState.selectionBusy ||
+    workflowState.upscaleBusy
+  );
+}
+
+function createAssetPickerMessage(message, kind = "") {
+  const status = document.createElement("p");
+  status.className = "asset-picker-message";
+  status.dataset.kind = kind;
+  status.textContent = message;
+  return status;
+}
+
+function refreshStoryboardAssetControls() {
+  const locked = sourceControlsAreLocked();
+  const isLibraryMode = storyboardSourceState.mode === "library";
+  const selectionLimitReached =
+    storyboardSourceState.characterAssetIds.length >=
+    MAX_STORYBOARD_CHARACTERS;
+  for (const input of elements.storyboardCharacterAssetGrid.querySelectorAll(
+    'input[name="storyboard-character-asset"]',
+  )) {
+    const selectedIndex =
+      storyboardSourceState.characterAssetIds.indexOf(input.value);
+    input.checked = selectedIndex >= 0;
+    input.disabled =
+      !isLibraryMode ||
+      locked ||
+      (selectionLimitReached && selectedIndex < 0);
+    const assetName = input.dataset.assetName || "未命名角色";
+    input.setAttribute(
+      "aria-label",
+      selectedIndex >= 0
+        ? `${assetName}，第 ${selectedIndex + 1} 位角色`
+        : `${assetName}，尚未選取`,
+    );
+    const card = input.closest(".storyboard-asset-card");
+    const order = card?.querySelector(".asset-selection-order");
+    if (order) {
+      order.textContent = selectedIndex >= 0 ? String(selectedIndex + 1) : "";
+    }
+    if (card) {
+      card.dataset.selectionOrder =
+        selectedIndex >= 0 ? String(selectedIndex + 1) : "";
+    }
+  }
+  for (const input of elements.storyboardSceneAssetGrid.querySelectorAll(
+    'input[name="storyboard-scene-asset"]',
+  )) {
+    input.checked = storyboardSourceState.sceneAssetId === input.value;
+    input.disabled = !isLibraryMode || locked;
+  }
+}
+
+function updateStoryboardSourceStatus(message = "", kind = "") {
+  if (storyboardSourceState.mode !== "library") {
+    elements.storyboardCharacterSelectionStatus.textContent =
+      "手動上傳模式固定使用一位角色。";
+    elements.storyboardCharacterSelectionStatus.dataset.kind = "";
+    elements.storyboardSceneSelectionStatus.textContent =
+      "請在下方上傳一張場景圖。";
+    elements.storyboardSceneSelectionStatus.dataset.kind = "";
+    return;
+  }
+  const selectedCount = storyboardSourceState.characterAssetIds.length;
+  elements.storyboardCharacterSelectionStatus.textContent =
+    message ||
+    (selectedCount === 0
+      ? "尚未選擇角色；請選 1–2 位。"
+      : selectedCount === 1
+        ? "已選 1 / 2 位角色；系統會使用單角色 B1。"
+        : "已選 2 / 2 位角色，已達上限；系統會依序使用 B1 → B2。");
+  elements.storyboardCharacterSelectionStatus.dataset.kind = kind;
+  elements.storyboardSceneSelectionStatus.textContent =
+    storyboardSourceState.sceneAssetId
+      ? "已選擇 1 個場景。"
+      : "尚未選擇場景；必須選擇恰好 1 個。";
+  elements.storyboardSceneSelectionStatus.dataset.kind = "";
+}
+
+function renderStoryboardAssetPickers() {
+  const characters = assetLibraryState.characters;
+  const scenes = assetLibraryState.scenes;
+  elements.storyboardCharacterAssetGrid.dataset.state =
+    characters.length > 0 ? "ready" : assetLibraryState.status;
+  elements.storyboardSceneAssetGrid.dataset.state =
+    scenes.length > 0 ? "ready" : assetLibraryState.status;
+  elements.storyboardCharacterAssetGrid.replaceChildren(
+    ...(characters.length > 0
+      ? characters.map(createStoryboardCharacterCard)
+      : [
+          createAssetPickerMessage(
+            assetLibraryState.status === "error"
+              ? "角色圖庫載入失敗，請改用手動上傳。"
+              : "角色圖庫目前沒有可用資產。",
+            assetLibraryState.status === "error" ? "error" : "",
+          ),
+        ]),
+  );
+  elements.storyboardSceneAssetGrid.replaceChildren(
+    ...(scenes.length > 0
+      ? scenes.map(createStoryboardSceneCard)
+      : [
+          createAssetPickerMessage(
+            assetLibraryState.status === "error"
+              ? "場景圖庫載入失敗，請改用手動上傳。"
+              : "場景圖庫目前沒有可用資產。",
+            assetLibraryState.status === "error" ? "error" : "",
+          ),
+        ]),
+  );
+  refreshStoryboardAssetControls();
+  updateStoryboardSourceStatus();
+}
+
+function setStoryboardSourceMode(mode, { announce = false } = {}) {
+  const libraryPending = assetLibraryState.status === "loading";
+  const nextMode =
+    mode === "library" && (libraryCanCompose() || libraryPending)
+      ? "library"
+      : "upload";
+  storyboardSourceState.mode = nextMode;
+  elements.storyboardSourceLibrary.checked = nextMode === "library";
+  elements.storyboardSourceUpload.checked = nextMode === "upload";
+  elements.storyboardSourceLibrary.disabled =
+    libraryPending || !libraryCanCompose() || sourceControlsAreLocked();
+  elements.storyboardSourceUpload.disabled = sourceControlsAreLocked();
+  elements.storyboardLibrarySource.hidden = nextMode !== "library";
+  elements.storyboardUploadSource.hidden = nextMode !== "upload";
+  const uploadEnabled = nextMode === "upload" && !sourceControlsAreLocked();
+  elements.storyboardSceneFile.disabled = !uploadEnabled;
+  elements.storyboardCharacterFile.disabled = !uploadEnabled;
+  elements.storyboardSceneFile.required = nextMode === "upload";
+  elements.storyboardCharacterFile.required = nextMode === "upload";
+  refreshStoryboardAssetControls();
+  updateStoryboardSourceStatus();
+  if (announce && nextMode !== mode) {
+    showWorkflowStatus(
+      elements.storyboardGenerationStatus,
+      "角色或場景圖庫目前沒有可用資產，已切換為單角色手動上傳。",
+      "warning",
+    );
+  }
+}
+
+function resetRunForSourceChange() {
+  if (workflowState.runId && !sourceControlsAreLocked()) {
+    resetWorkflowRun();
+  } else {
+    clearWorkflowStatus(elements.storyboardGenerationStatus);
+  }
+}
+
+function handleCharacterAssetSelection(input) {
+  const assetId = assetIdentifier(input.value);
+  if (!assetId || !assetById(assetLibraryState.characters, assetId)) {
+    input.checked = false;
+    return;
+  }
+  const selectedIndex =
+    storyboardSourceState.characterAssetIds.indexOf(assetId);
+  if (input.checked && selectedIndex < 0) {
+    if (
+      storyboardSourceState.characterAssetIds.length >=
+      MAX_STORYBOARD_CHARACTERS
+    ) {
+      input.checked = false;
+      updateStoryboardSourceStatus(
+        "最多只能選擇 2 位角色；請先取消一位再選擇。",
+        "warning",
+      );
+      refreshStoryboardAssetControls();
+      return;
+    }
+    storyboardSourceState.characterAssetIds.push(assetId);
+  } else if (!input.checked && selectedIndex >= 0) {
+    storyboardSourceState.characterAssetIds.splice(selectedIndex, 1);
+  }
+  resetRunForSourceChange();
+  refreshStoryboardAssetControls();
+  updateStoryboardSourceStatus();
+}
+
+function handleSceneAssetSelection(input) {
+  const assetId = assetIdentifier(input.value);
+  if (!assetId || !assetById(assetLibraryState.scenes, assetId)) {
+    input.checked = false;
+    return;
+  }
+  storyboardSourceState.sceneAssetId = assetId;
+  resetRunForSourceChange();
+  refreshStoryboardAssetControls();
+  updateStoryboardSourceStatus();
+}
+
+function applyAssetLibrary(payload) {
+  if (
+    !payload ||
+    typeof payload !== "object" ||
+    !Array.isArray(payload.characters) ||
+    !Array.isArray(payload.scenes)
+  ) {
+    throw new Error("素材圖庫回應格式不相容。");
+  }
+  const characters = normalizeAssetList(
+    payload?.characters,
+    normalizeCharacterAsset,
+  );
+  const scenes = normalizeAssetList(payload?.scenes, normalizeSceneAsset);
+  assetLibraryState.status = "ready";
+  assetLibraryState.characters = characters;
+  assetLibraryState.scenes = scenes;
+  storyboardSourceState.characterAssetIds =
+    storyboardSourceState.characterAssetIds.filter((assetId) =>
+      Boolean(assetById(characters, assetId)),
+    );
+  if (!assetById(scenes, storyboardSourceState.sceneAssetId)) {
+    storyboardSourceState.sceneAssetId = "";
+  }
+  renderHistoryRail(
+    "character",
+    characters,
+    characters.length > 0 ? "ready" : "empty",
+  );
+  renderHistoryRail(
+    "scene",
+    scenes,
+    scenes.length > 0 ? "ready" : "empty",
+  );
+  renderStoryboardAssetPickers();
+  setStoryboardSourceMode(
+    storyboardSourceState.mode === "upload" ? "upload" : "library",
+    { announce: !libraryCanCompose() },
+  );
+}
+
+async function loadAssetLibrary() {
+  try {
+    applyAssetLibrary(await apiRequest("/assets"));
+  } catch (_error) {
+    assetLibraryState.status = "error";
+    assetLibraryState.characters = [];
+    assetLibraryState.scenes = [];
+    storyboardSourceState.characterAssetIds = [];
+    storyboardSourceState.sceneAssetId = "";
+    renderHistoryRail(
+      "character",
+      [],
+      "error",
+      "暫時無法讀取角色圖庫；Agent 尚未接入時仍可使用手動上傳。",
+    );
+    renderHistoryRail(
+      "scene",
+      [],
+      "error",
+      "暫時無法讀取場景圖庫；Agent 尚未接入時仍可使用手動上傳。",
+    );
+    renderStoryboardAssetPickers();
+    setStoryboardSourceMode("upload", { announce: true });
+  }
 }
 
 function appendCharacterLayers(container, scale = "card") {
@@ -635,8 +1260,6 @@ function setComposeBusy(isBusy, reason = isBusy ? "compose" : "") {
   workflowState.composeBusy = isBusy;
   workflowState.sourceLockReason = isBusy ? reason : "";
   for (const control of [
-    elements.storyboardSceneFile,
-    elements.storyboardCharacterFile,
     elements.storyboardPrompt,
     elements.storyboardCandidateCount,
   ]) {
@@ -656,6 +1279,7 @@ function setComposeBusy(isBusy, reason = isBusy ? "compose" : "") {
     "aria-busy",
     String(isBusy),
   );
+  setStoryboardSourceMode(storyboardSourceState.mode);
 }
 
 function setCandidateControlsDisabled(isDisabled) {
@@ -762,7 +1386,7 @@ function resetResultShowcase() {
   elements.storyboardAssetState.textContent = "等待素材";
   elements.storyboardResultTitle.textContent = "尚未產生候選";
   elements.storyboardResultDescription.textContent =
-    "請先準備場景、單一角色正面參考與詳細合成描述。";
+    "請先從圖庫選擇角色與場景，或改用單角色手動上傳，再補上詳細合成描述。";
   clearResultLink(elements.storyboardDownloadLink);
   clearResultLink(elements.upscale4kDownloadLink);
   updateDownloadsVisibility();
@@ -772,6 +1396,7 @@ function resetWorkflowRun() {
   clearWorkflowPoll();
   workflowState.runId = "";
   workflowState.runStatus = "";
+  workflowState.workflowRoute = "";
   workflowState.candidates = [];
   workflowState.activeCandidateId = "";
   workflowState.confirmedCandidateId = "";
@@ -787,6 +1412,10 @@ function resetWorkflowRun() {
   clearWorkflowStatus(elements.storyboardSelectionStatus);
   clearWorkflowStatus(elements.storyboardUpscaleStatus);
   hideWorkflowRetryButtons();
+  elements.storyboardRouteStatus.textContent =
+    "系統會在送出後回報實際使用的合成路徑。";
+  elements.storyboardRouteStatus.dataset.route = "";
+  elements.storyboardRouteStatus.dataset.kind = "";
   setComposeBusy(false);
   setSelectionBusy(false);
   setSelectionLocked(false);
@@ -802,6 +1431,23 @@ function candidateIsComplete(candidate) {
 }
 
 function candidateSeedText(candidate) {
+  const rawStageSeeds = candidate?.stage_seeds;
+  const stageSeeds = Array.isArray(rawStageSeeds)
+    ? rawStageSeeds
+    : rawStageSeeds && typeof rawStageSeeds === "object"
+      ? [rawStageSeeds.b1, rawStageSeeds.b2]
+      : [];
+  const safeStageSeeds = stageSeeds
+    .filter(
+      (seed) =>
+        (typeof seed === "number" || typeof seed === "string") &&
+        String(seed).trim(),
+    )
+    .map((seed) => String(seed).slice(0, 32))
+    .slice(0, 2);
+  if (safeStageSeeds.length > 0) {
+    return `Seed ${safeStageSeeds.join(" → ")}`;
+  }
   if (
     typeof candidate?.seed !== "number" &&
     typeof candidate?.seed !== "string"
@@ -809,6 +1455,27 @@ function candidateSeedText(candidate) {
     return "Seed 待回傳";
   }
   return `Seed ${String(candidate.seed)}`;
+}
+
+function applyWorkflowRoute(value, { allowLegacyUpload = false } = {}) {
+  const route = typeof value === "string" ? value.trim() : "";
+  const routeLabels = {
+    single_character_b1: "實際路徑：單角色 B1",
+    dual_character_b1_b2: "實際路徑：雙角色 B1 → B2",
+  };
+  const resolvedRoute =
+    route in routeLabels
+      ? route
+      : allowLegacyUpload && !route
+        ? "single_character_b1"
+        : "";
+  if (!resolvedRoute) {
+    throw new Error("工作流服務沒有回傳可辨識的合成路徑。");
+  }
+  workflowState.workflowRoute = resolvedRoute;
+  elements.storyboardRouteStatus.textContent = routeLabels[resolvedRoute];
+  elements.storyboardRouteStatus.dataset.route = resolvedRoute;
+  elements.storyboardRouteStatus.dataset.kind = "success";
 }
 
 function candidateStatusText(candidate) {
@@ -1049,6 +1716,11 @@ function applyRunPayload(run) {
   if (workflowState.runId && workflowState.runId !== runId) {
     throw new Error("工作流服務回傳了不相符的任務。");
   }
+  if (run?.workflow_route || !workflowState.workflowRoute) {
+    applyWorkflowRoute(run?.workflow_route, {
+      allowLegacyUpload: storyboardSourceState.mode === "upload",
+    });
+  }
   workflowState.runId = runId;
   workflowState.runStatus = catalogText(run.status, "unknown");
   renderCandidates(run.candidates);
@@ -1212,25 +1884,6 @@ async function createStoryboardRun() {
   if (!elements.storyboardComposeForm.reportValidity()) {
     return;
   }
-  const sceneImage = elements.storyboardSceneFile.files?.[0];
-  const characterImage = elements.storyboardCharacterFile.files?.[0];
-  if (!sceneImage || !characterImage) {
-    showWorkflowStatus(
-      elements.storyboardGenerationStatus,
-      "請選擇場景圖與單一角色正面參考。",
-      "error",
-    );
-    return;
-  }
-
-  resetWorkflowRun();
-  setComposeBusy(true);
-  elements.storyboardAssetState.textContent = "上傳素材";
-  showWorkflowStatus(
-    elements.storyboardGenerationStatus,
-    "正在安全上傳兩張參考圖並建立候選任務…",
-  );
-
   const candidateCount = Number.parseInt(
     elements.storyboardCandidateCount.value,
     10,
@@ -1244,16 +1897,78 @@ async function createStoryboardRun() {
         ? candidateCount
         : 3,
   };
-  const formData = new FormData();
-  formData.append("request", JSON.stringify(request));
-  formData.append("scene_image", sceneImage);
-  formData.append("character_image", characterImage);
 
-  try {
-    const run = await workflowRequest("/storyboards", {
+  let requestPath = "/storyboards";
+  let requestOptions;
+  if (storyboardSourceState.mode === "library") {
+    const characterAssetIds = [
+      ...storyboardSourceState.characterAssetIds,
+    ];
+    const sceneAssetId = storyboardSourceState.sceneAssetId;
+    if (
+      characterAssetIds.length < 1 ||
+      characterAssetIds.length > MAX_STORYBOARD_CHARACTERS
+    ) {
+      showWorkflowStatus(
+        elements.storyboardGenerationStatus,
+        "請從角色圖庫選擇 1–2 位角色。",
+        "error",
+      );
+      elements.storyboardCharacterSelectionStatus.focus?.();
+      return;
+    }
+    if (!sceneAssetId) {
+      showWorkflowStatus(
+        elements.storyboardGenerationStatus,
+        "請從場景圖庫選擇恰好 1 個場景。",
+        "error",
+      );
+      elements.storyboardSceneSelectionStatus.focus?.();
+      return;
+    }
+    requestPath = "/storyboards/from-library";
+    requestOptions = {
+      method: "POST",
+      json: {
+        ...request,
+        character_asset_ids: characterAssetIds,
+        scene_asset_id: sceneAssetId,
+      },
+    };
+  } else {
+    const sceneImage = elements.storyboardSceneFile.files?.[0];
+    const characterImage = elements.storyboardCharacterFile.files?.[0];
+    if (!sceneImage || !characterImage) {
+      showWorkflowStatus(
+        elements.storyboardGenerationStatus,
+        "請選擇場景圖與單一角色正面參考。",
+        "error",
+      );
+      return;
+    }
+    const formData = new FormData();
+    formData.append("request", JSON.stringify(request));
+    formData.append("scene_image", sceneImage);
+    formData.append("character_image", characterImage);
+    requestOptions = {
       method: "POST",
       body: formData,
-    });
+    };
+  }
+
+  resetWorkflowRun();
+  setComposeBusy(true);
+  elements.storyboardAssetState.textContent =
+    storyboardSourceState.mode === "library" ? "讀取圖庫素材" : "上傳素材";
+  showWorkflowStatus(
+    elements.storyboardGenerationStatus,
+    storyboardSourceState.mode === "library"
+      ? "正在以 server-issued 資產建立候選任務…"
+      : "正在安全上傳兩張參考圖並建立候選任務…",
+  );
+
+  try {
+    const run = await workflowRequest(requestPath, requestOptions);
     applyRunPayload(run);
     if (runNeedsPolling("compose", run)) {
       startWorkflowPolling("compose");
@@ -1539,6 +2254,34 @@ for (const input of document.querySelectorAll(
   input.addEventListener("change", updateSceneShowcase);
 }
 
+for (const input of [
+  elements.storyboardSourceLibrary,
+  elements.storyboardSourceUpload,
+]) {
+  input.addEventListener("change", () => {
+    if (!input.checked || sourceControlsAreLocked()) {
+      return;
+    }
+    resetRunForSourceChange();
+    setStoryboardSourceMode(input.value, { announce: true });
+  });
+}
+
+elements.storyboardCharacterAssetGrid.addEventListener("change", (event) => {
+  const input = event.target.closest(
+    'input[name="storyboard-character-asset"]',
+  );
+  if (input && !sourceControlsAreLocked()) {
+    handleCharacterAssetSelection(input);
+  }
+});
+elements.storyboardSceneAssetGrid.addEventListener("change", (event) => {
+  const input = event.target.closest('input[name="storyboard-scene-asset"]');
+  if (input && !sourceControlsAreLocked()) {
+    handleSceneAssetSelection(input);
+  }
+});
+
 elements.storyboardComposeForm.addEventListener("submit", (event) => {
   event.preventDefault();
   void createStoryboardRun();
@@ -1606,3 +2349,4 @@ syncTabOrientation();
 updateSceneShowcase();
 resetWorkflowRun();
 void loadCatalog();
+void loadAssetLibrary();

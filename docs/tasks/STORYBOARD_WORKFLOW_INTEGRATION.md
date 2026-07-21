@@ -5,6 +5,10 @@
 >
 > 本任務擴充已完成的 Gateway V2 展示頁；保留 loopback-only、strict
 > schema、同源資產與無登入的安全邊界。
+>
+> 2026-07-21 後續已加入持久化角色／場景圖庫與 B1→B2 雙角色自動路由；
+> 最新增量契約見
+> [`ASSET_LIBRARY_AND_DUAL_STORYBOARD.md`](./ASSET_LIBRARY_AND_DUAL_STORYBOARD.md)。
 
 ## 1. 使用者流程
 
@@ -38,7 +42,8 @@ FastAPI Gateway
 - Gateway 未連到 ComfyUI 時仍須能啟動並提供 catalog 與靜態頁面。
 - Browser 不接觸 ComfyUI endpoint、prompt ID、server path 或 workflow
   graph。
-- 任務與圖片由單一 Gateway process 暫存管理；本階段不提供跨重啟歷史。
+- 本文件描述的分鏡任務與候選由單一 Gateway process 暫存管理；後續角色／
+  場景圖庫已改為 Git-ignored 本機持久化，但不恢復跨重啟的分鏡工作進度。
 
 ## 3. Workflow adapter
 

@@ -13,10 +13,13 @@ from enum import StrEnum
 from app.core.workflow_settings import WorkflowSettings
 from app.schemas.api.workflows import (
     StoryboardCreateSpec,
+    StoryboardFromLibraryCreateSpec,
     StoryboardRunResponse,
     WorkflowCandidateResponse,
     WorkflowCandidateStatus,
+    WorkflowRoute,
     WorkflowRunStatus,
+    WorkflowStageSeeds,
     WorkflowStatusResponse,
     WorkflowUpscaleResponse,
     WorkflowUpscaleStatus,
@@ -28,6 +31,7 @@ from app.services.workflows.adapters import (
 from app.services.workflows.client import (
     ComfyUIClient,
     ComfyUIClientError,
+    WorkflowGraph,
 )
 from app.services.workflows.images import (
     NormalizedImage,
@@ -52,6 +56,7 @@ class WorkflowServiceError(RuntimeError):
 class _CandidateRecord:
     candidate_id: str
     seed: int
+    b2_seed: int | None = None
     status: WorkflowCandidateStatus = WorkflowCandidateStatus.QUEUED
     image: NormalizedImage | None = None
     error: str | None = None
@@ -70,8 +75,11 @@ class _UpscaleRecord:
 class _RunRecord:
     run_id: str
     prompt: str
+    workflow_route: WorkflowRoute
+    scene_name: str
+    character_names: tuple[str, ...]
     scene_image: NormalizedImage | None
-    character_image: NormalizedImage | None
+    character_images: list[NormalizedImage]
     candidates: list[_CandidateRecord]
     status: WorkflowRunStatus = WorkflowRunStatus.QUEUED
     selected_candidate_id: str | None = None
@@ -158,6 +166,54 @@ class StoryboardWorkflowService:
     ) -> StoryboardRunResponse:
         """建立 1–3 張候選的非同步合成工作。"""
 
+        return await self._create_run(
+            prompt=spec.prompt,
+            candidate_count=spec.candidate_count,
+            scene_image=scene_image,
+            character_images=(character_image,),
+            scene_name="使用者上傳的場景",
+            character_names=("使用者上傳的角色一",),
+        )
+
+    async def create_library_run(
+        self,
+        spec: StoryboardFromLibraryCreateSpec,
+        *,
+        scene_image: NormalizedImage,
+        character_images: tuple[NormalizedImage, ...],
+        scene_name: str,
+        character_names: tuple[str, ...],
+    ) -> StoryboardRunResponse:
+        """以 server-resolved 本機素材建立一或兩角色分鏡。"""
+
+        return await self._create_run(
+            prompt=spec.prompt,
+            candidate_count=spec.candidate_count,
+            scene_image=scene_image,
+            character_images=character_images,
+            scene_name=scene_name,
+            character_names=character_names,
+        )
+
+    async def _create_run(
+        self,
+        *,
+        prompt: str,
+        candidate_count: int,
+        scene_image: NormalizedImage,
+        character_images: tuple[NormalizedImage, ...],
+        scene_name: str,
+        character_names: tuple[str, ...],
+    ) -> StoryboardRunResponse:
+        if len(character_images) not in {1, 2} or len(character_names) != len(
+            character_images
+        ):
+            raise WorkflowServiceError(
+                "WORKFLOW_INVALID_ASSET_SELECTION",
+                "分鏡必須精確使用一或兩個角色素材。",
+                status_code=422,
+            )
+
         if self._closed:
             raise WorkflowServiceError(
                 "WORKFLOW_SERVICE_CLOSED",
@@ -166,21 +222,40 @@ class StoryboardWorkflowService:
             )
         await self._require_available()
         run_id = f"run_{uuid.uuid4().hex}"
-        seeds = self._unique_seeds(spec.candidate_count)
+        workflow_route = (
+            WorkflowRoute.SINGLE_CHARACTER_B1
+            if len(character_images) == 1
+            else WorkflowRoute.DUAL_CHARACTER_B1_B2
+        )
+        stage_count = 1 if workflow_route is WorkflowRoute.SINGLE_CHARACTER_B1 else 2
+        seeds = self._unique_seeds(candidate_count * stage_count)
         candidates = [
-            _CandidateRecord(candidate_id=f"cand_{uuid.uuid4().hex}", seed=seed)
-            for seed in seeds
+            _CandidateRecord(
+                candidate_id=f"cand_{uuid.uuid4().hex}",
+                seed=seeds[index],
+                b2_seed=(
+                    seeds[candidate_count + index]
+                    if workflow_route is WorkflowRoute.DUAL_CHARACTER_B1_B2
+                    else None
+                ),
+            )
+            for index in range(candidate_count)
         ]
         run = _RunRecord(
             run_id=run_id,
-            prompt=spec.prompt.strip(),
+            prompt=prompt.strip(),
+            workflow_route=workflow_route,
+            scene_name=scene_name,
+            character_names=character_names,
             scene_image=scene_image,
-            character_image=character_image,
+            character_images=list(character_images),
             candidates=candidates,
         )
         async with self._lock:
             self._ensure_run_and_queue_capacity_locked()
-            input_bytes = len(scene_image.content) + len(character_image.content)
+            input_bytes = len(scene_image.content) + sum(
+                len(image.content) for image in character_images
+            )
             self._ensure_retained_capacity_locked(input_bytes)
             self._runs[run_id] = run
             self._retained_bytes += input_bytes
@@ -359,10 +434,17 @@ class StoryboardWorkflowService:
         async with self._lock:
             run = self._get_run(run_id)
             run.status = WorkflowRunStatus.RUNNING
-            if run.scene_image is None or run.character_image is None:
+            expected_character_count = (
+                1 if run.workflow_route is WorkflowRoute.SINGLE_CHARACTER_B1 else 2
+            )
+            if (
+                run.scene_image is None
+                or len(run.character_images) != expected_character_count
+                or len(run.character_names) != expected_character_count
+            ):
                 raise RuntimeError("合成工作缺少輸入圖片")
             scene_bytes = run.scene_image.content
-            character_bytes = run.character_image.content
+            character_bytes = tuple(image.content for image in run.character_images)
         subfolder = f"final-project-mvp/{run_id}"
         try:
             scene_ref = await self._client.upload_image(
@@ -370,10 +452,19 @@ class StoryboardWorkflowService:
                 scene_bytes,
                 subfolder=subfolder,
             )
-            character_ref = await self._client.upload_image(
+            first_character_ref = await self._client.upload_image(
                 f"{run_id}-character.png",
-                character_bytes,
+                character_bytes[0],
                 subfolder=subfolder,
+            )
+            second_character_ref = (
+                await self._client.upload_image(
+                    f"{run_id}-character-2.png",
+                    character_bytes[1],
+                    subfolder=subfolder,
+                )
+                if expected_character_count == 2
+                else None
             )
         except ComfyUIClientError as exc:
             await self._fail_all_candidates(run_id, exc.message)
@@ -385,34 +476,47 @@ class StoryboardWorkflowService:
         for candidate in run.candidates:
             async with self._lock:
                 candidate.status = WorkflowCandidateStatus.RUNNING
-            prompt_id: str | None = None
             try:
                 graph = self._adapter.build_composition(
                     scene_image=scene_ref.load_image_value,
-                    character_image=character_ref.load_image_value,
+                    character_image=first_character_ref.load_image_value,
                     prompt=run.prompt,
                     seed=candidate.seed,
                     output_prefix=(
-                        f"final-project-mvp/{run_id}/compose/{candidate.candidate_id}"
+                        f"final-project-mvp/{run_id}/b1/{candidate.candidate_id}"
                     ),
+                    scene_name=run.scene_name,
+                    character_name=run.character_names[0],
                 )
-                prompt_id = self._new_prompt_id()
-                self._active_prompt_id = prompt_id
-                await self._client.queue_prompt(graph, prompt_id=prompt_id)
-                output_ref = await self._client.wait_for_output(
-                    prompt_id,
+                normalized = await self._execute_composition_graph(
+                    graph,
                     output_node_id="9",
                 )
-                output = await self._client.download_image(output_ref)
-                normalized = await asyncio.to_thread(
-                    normalize_generated_image,
-                    output,
-                    settings=self._settings,
-                )
+                if run.workflow_route is WorkflowRoute.DUAL_CHARACTER_B1_B2:
+                    if second_character_ref is None or candidate.b2_seed is None:
+                        raise RuntimeError("雙角色工作缺少 B2 設定")
+                    intermediate_ref = await self._client.upload_image(
+                        f"{run_id}-{candidate.candidate_id}-b1.png",
+                        normalized.content,
+                        subfolder=subfolder,
+                    )
+                    second_graph = self._adapter.build_second_composition(
+                        intermediate_image=intermediate_ref.load_image_value,
+                        second_character_image=second_character_ref.load_image_value,
+                        prompt=run.prompt,
+                        seed=candidate.b2_seed,
+                        output_prefix=(
+                            f"final-project-mvp/{run_id}/b2/{candidate.candidate_id}"
+                        ),
+                        scene_name=run.scene_name,
+                        first_character_name=run.character_names[0],
+                        second_character_name=run.character_names[1],
+                    )
+                    normalized = await self._execute_composition_graph(
+                        second_graph,
+                        output_node_id="9",
+                    )
             except (ComfyUIClientError, UnsafeImageError, WorkflowAdapterError) as exc:
-                if prompt_id is not None:
-                    with contextlib.suppress(ComfyUIClientError):
-                        await self._client.cancel_prompt(prompt_id)
                 await self._fail_candidate(candidate, self._safe_error(exc))
             else:
                 async with self._lock:
@@ -424,9 +528,6 @@ class StoryboardWorkflowService:
                     else:
                         candidate.status = WorkflowCandidateStatus.FAILED
                         candidate.error = "本機圖片保留空間已達安全上限。"
-            finally:
-                if self._active_prompt_id == prompt_id:
-                    self._active_prompt_id = None
 
         async with self._lock:
             run.status = (
@@ -437,6 +538,36 @@ class StoryboardWorkflowService:
                 )
                 else WorkflowRunStatus.FAILED
             )
+
+    async def _execute_composition_graph(
+        self,
+        graph: WorkflowGraph,
+        *,
+        output_node_id: str,
+    ) -> NormalizedImage:
+        """執行單一固定階段，並將 Comfy output 重新正規化。"""
+
+        prompt_id = self._new_prompt_id()
+        self._active_prompt_id = prompt_id
+        try:
+            await self._client.queue_prompt(graph, prompt_id=prompt_id)
+            output_ref = await self._client.wait_for_output(
+                prompt_id,
+                output_node_id=output_node_id,
+            )
+            output = await self._client.download_image(output_ref)
+            return await asyncio.to_thread(
+                normalize_generated_image,
+                output,
+                settings=self._settings,
+            )
+        except (ComfyUIClientError, UnsafeImageError):
+            with contextlib.suppress(ComfyUIClientError):
+                await self._client.cancel_prompt(prompt_id)
+            raise
+        finally:
+            if self._active_prompt_id == prompt_id:
+                self._active_prompt_id = None
 
     async def _process_upscale(self, run_id: str) -> None:
         async with self._lock:
@@ -535,7 +666,15 @@ class StoryboardWorkflowService:
         candidate_responses = tuple(
             WorkflowCandidateResponse(
                 candidate_id=candidate.candidate_id,
-                seed=candidate.seed,
+                seed=(
+                    candidate.b2_seed
+                    if candidate.b2_seed is not None
+                    else candidate.seed
+                ),
+                stage_seeds=WorkflowStageSeeds(
+                    b1=candidate.seed,
+                    b2=candidate.b2_seed,
+                ),
                 status=candidate.status,
                 image_url=(
                     self._candidate_url(run.run_id, candidate.candidate_id, "image")
@@ -568,6 +707,7 @@ class StoryboardWorkflowService:
         return StoryboardRunResponse(
             run_id=run.run_id,
             status=run.status,
+            workflow_route=run.workflow_route,
             candidates=candidate_responses,
             selected_candidate_id=run.selected_candidate_id,
             upscale=WorkflowUpscaleResponse(
@@ -651,9 +791,8 @@ class StoryboardWorkflowService:
         if run.scene_image is not None:
             released += len(run.scene_image.content)
             run.scene_image = None
-        if run.character_image is not None:
-            released += len(run.character_image.content)
-            run.character_image = None
+        released += sum(len(image.content) for image in run.character_images)
+        run.character_images.clear()
         self._retained_bytes = max(0, self._retained_bytes - released)
 
     @staticmethod

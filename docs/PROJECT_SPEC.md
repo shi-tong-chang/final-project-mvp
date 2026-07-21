@@ -4,9 +4,10 @@
 
 建立一個只在本機運作的繁體中文故事視覺工作台。使用者可在角色、場景及
 分鏡三個分類間切換；角色頁以同一個角色展示二十種畫風，角色與場景頁
-都可確認一筆待送往對應 Agent 的生成設定，並在最右側預留已生成資產的
-歷史軌。分鏡頁可把一張場景圖與一張角色正面參考圖合成候選，由使用者
-選定其中一張後，才可送入固定的 4K 放大流程。
+都可確認一筆待送往對應 Agent 的生成設定，並顯示已登錄的本機生成資產。
+分鏡頁可從圖庫選擇一個或兩個角色與一個場景，後端依角色數量自動選擇
+固定的單角色或雙角色工作流；使用者選定其中一張候選後，才可送入固定的
+4K 放大流程。
 
 ## 2. 本階段功能
 
@@ -16,12 +17,17 @@
 - 選取風格後更新大型預覽、說明、標籤與提示詞。
 - 角色與場景頁提供「確認生成」CTA；目前只驗證並確認頁面設定，Agent
   未接入前不送出 HTTP、Codex thread／turn 或圖片生成工作流。
-- 角色與場景頁最右側提供空的歷史軌，預留未來顯示已命名的本機生成
-  資產；空狀態不得冒充正式生成結果。
+- 角色頁提供本機角色圖庫；每筆角色模板包含前、左、右、後四視圖。
+- 場景頁提供本機場景圖庫；每筆場景模板包含一張定稿圖。
+- 圖庫資產以 opaque ID 與安全同源 URL 提供，持久化在 Git-ignored
+  `.runtime/asset-library/`；空狀態不得冒充正式生成結果。
 - 場景與分鏡版面預覽。
 - Desktop／mobile responsive 與鍵盤 tabs。
-- 上傳一張場景圖與一張單角色正面參考圖。
-- 使用 server-owned `wf_dual_B1` 模板產生 1–3 張分鏡候選。
+- 從圖庫選擇一個或兩個角色與一個場景；圖庫尚空時保留一張場景加一張
+  角色正面參考的手動上傳 fallback。
+- 一個角色由 server 固定使用 `wf_dual_B1`；兩個角色由 server 依選擇
+  順序執行 `wf_dual_B1` → `wf_dual_B2`，Browser 不能指定工作流。
+- 使用 prompt guard 保留角色模板身份與場景結構，產生 1–3 張最終候選。
 - 顯示每張候選的任務狀態與 seed，並由使用者明確選定一張。
 - 只有已完成且已選定的候選可送入 `wf10_upscale_opt2`。
 - 4K 工作流固定輸出 3840×2160，並提供同源預覽與下載。
@@ -29,11 +35,12 @@
 
 ## 3. 不在本階段
 
-- 角色／場景正式生成、素材持久化與跨重啟歷史。
+- 角色／場景 Agent 的正式生成與任務狀態（Agent TOML 尚待組員交付）。
 - Codex 對話 UI。
 - 資料庫、使用者登入或遠端公開。
 - 單獨生成角色或場景。
-- 雙角色 B1／人工選片／B2 的兩階段合成。
+- 雙角色中途 B1 人工選片；本階段每張最終候選自動完成自己的 B1→B2
+  兩輪，再由使用者選最終候選。
 - 任意畫幅的 4K 輸出、任意 workflow 上傳或 node 級控制。
 
 ## 4. Clone-to-run 與 runtime 契約
@@ -71,8 +78,9 @@
 `.codex/agents/character_generator.toml`、
 `.codex/agents/scene_generator.toml`。兩者到位前維持
 `pending`、`blocks_start=false`；不阻擋現有首頁、catalog、使用者自行
-上傳素材的單角色分鏡，以及選定候選後的 4K。每份 TOML 接線時至少嚴格
-驗證非空白 `name`、`description`、`developer_instructions`。
+上傳素材的單角色分鏡、已登錄素材的單／雙角色分鏡，以及選定候選後的
+4K。每份 TOML 接線時至少嚴格驗證非空白 `name`、`description`、
+`developer_instructions`。
 
 ## 5. Catalog 契約
 
@@ -113,7 +121,7 @@ Schema version：`storyboard-studio.catalog.v2`。
   且仍等於 Browser 回傳的 server-issued 預期候選 ID。
 - 固定 workflow 以 SHA-256 fail closed，Git checkout 強制保留 LF，
   避免 graph 漂移或 Windows CRLF 改變固定資產。
-- Managed ComfyUI、models、logs 與生成工作資料只寫入 Git-ignored
+- Managed ComfyUI、models、logs、素材庫與生成工作資料只寫入 Git-ignored
   `.runtime/`；adopted ComfyUI 保持唯讀。
 
 ## 7. 驗收
@@ -121,11 +129,14 @@ Schema version：`storyboard-studio.catalog.v2`。
 - Live catalog 精確提供二十個唯一角色風格及非空白提示詞片段。
 - Browser 無對話 panel／chat button，操作不建立 thread 或 turn。
 - 二十張卡使用相同角色 DOM layers。
-- 角色與場景頁都有最右側歷史軌；沒有正式生成資產時顯示明確空狀態。
+- 角色與場景頁都有可持久化的本機圖庫；沒有正式生成資產時顯示明確空
+  狀態，登錄後分別顯示四視圖角色與單圖場景。
 - 「確認生成」通過表單驗證後明示 Agent 尚待接入，不冒充已建立圖片，
   也不建立 thread、turn 或其他 mutation request。
 - 390px 手機雙欄且無水平溢位。
-- 分鏡合成可顯示 1–3 張候選；未選定前 4K 操作維持鎖定。
+- 分鏡頁只能選 1–2 位角色及恰好 1 個場景；server 回報並執行實際路由，
+  單角色為 B1、雙角色為 B1→B2。分鏡可顯示 1–3 張最終候選；未選定前
+  4K 操作維持鎖定。
 - 重新選定候選時，4K 只使用目前被 server 確認的單一候選。
 - 4K queued／running 時來源素材與選片保持鎖定；完成或失敗後可開始新
   工作。短暫輪詢失敗不得重複排程，應重試並與既有 run 對帳。

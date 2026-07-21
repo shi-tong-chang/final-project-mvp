@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import Field, field_validator
 
@@ -40,6 +40,13 @@ class WorkflowUpscaleStatus(StrEnum):
     FAILED = "failed"
 
 
+class WorkflowRoute(StrEnum):
+    """由 server 依角色數量選定的固定 workflow 路由。"""
+
+    SINGLE_CHARACTER_B1 = "single_character_b1"
+    DUAL_CHARACTER_B1_B2 = "dual_character_b1_b2"
+
+
 class StoryboardCreateSpec(GatewayStrictModel):
     """multipart `request` 欄位內的 typed JSON。"""
 
@@ -52,6 +59,26 @@ class StoryboardCreateSpec(GatewayStrictModel):
         if not value.strip():
             raise ValueError("prompt 不可只有空白")
         return value
+
+
+CharacterAssetId = Annotated[str, Field(pattern=r"^char_[0-9a-f]{32}$")]
+
+
+class StoryboardFromLibraryCreateSpec(StoryboardCreateSpec):
+    """只允許以本機素材庫 opaque ID 建立分鏡。"""
+
+    character_asset_ids: tuple[CharacterAssetId, ...] = Field(
+        min_length=1,
+        max_length=2,
+    )
+    scene_asset_id: str = Field(pattern=r"^scene_[0-9a-f]{32}$")
+
+    @field_validator("character_asset_ids")
+    @classmethod
+    def validate_character_asset_ids(cls, values: tuple[str, ...]) -> tuple[str, ...]:
+        if len(set(values)) != len(values):
+            raise ValueError("character_asset_ids 不可重複")
+        return values
 
 
 class StoryboardSelectionRequest(GatewayStrictModel):
@@ -74,11 +101,19 @@ class StoryboardUpscaleRequest(GatewayStrictModel):
         return value
 
 
+class WorkflowStageSeeds(GatewayStrictModel):
+    """同一候選在固定 B1／B2 階段使用的 server seed。"""
+
+    b1: int = Field(ge=0, le=9_007_199_254_740_991)
+    b2: int | None = Field(default=None, ge=0, le=9_007_199_254_740_991)
+
+
 class WorkflowCandidateResponse(GatewayStrictModel):
     """單一候選的安全狀態與同源資產 URL。"""
 
     candidate_id: str = Field(pattern=r"^cand_[0-9a-f]{32}$")
     seed: int = Field(ge=0, le=9_007_199_254_740_991)
+    stage_seeds: WorkflowStageSeeds
     status: WorkflowCandidateStatus
     image_url: str | None = None
     download_url: str | None = None
@@ -99,6 +134,7 @@ class StoryboardRunResponse(GatewayStrictModel):
 
     run_id: str = Field(pattern=r"^run_[0-9a-f]{32}$")
     status: WorkflowRunStatus
+    workflow_route: WorkflowRoute
     candidates: tuple[WorkflowCandidateResponse, ...]
     selected_candidate_id: str | None = Field(
         default=None,
