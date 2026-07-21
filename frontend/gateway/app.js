@@ -48,10 +48,22 @@ const elements = {
   ),
   selectedStylePrompt: document.querySelector("#selected-style-prompt"),
   selectedStyleTags: document.querySelector("#selected-style-tags"),
-  copyPromptButtonLabel: document.querySelector(
-    "#copy-character-prompt-label",
+  confirmCharacterButtonLabel: document.querySelector(
+    "#confirm-character-generation-label",
   ),
-  promptCopyStatus: document.querySelector("#prompt-copy-status"),
+  characterGenerationStatus: document.querySelector(
+    "#character-generation-status",
+  ),
+  sceneForm: document.querySelector("#scene-generation-form"),
+  scenePrompt: document.querySelector("#scene-prompt"),
+  sceneLight: document.querySelector("#scene-light"),
+  sceneScale: document.querySelector("#scene-scale"),
+  confirmSceneButtonLabel: document.querySelector(
+    "#confirm-scene-generation-label",
+  ),
+  sceneGenerationStatus: document.querySelector(
+    "#scene-generation-status",
+  ),
   sceneHeroArt: document.querySelector("#scene-hero-art"),
   selectedSceneDirection: document.querySelector(
     "#selected-scene-direction",
@@ -458,68 +470,55 @@ function updateCharacterShowcase() {
   } else {
     appendHeroLayers(elements.characterHeroArt);
   }
-  clearCopyStatus();
+  clearCharacterGenerationStatus();
 }
 
-function buildCharacterPrompt() {
-  const selected = selectedInput("character-style");
-  const characterDescription = elements.characterPrompt.value.trim();
-  const stylePrompt =
-    selected?.dataset.stylePrompt || "使用所選視覺風格呈現。";
-  return [
-    `角色設定：${characterDescription}`,
-    "角色一致性規則：保持角色的五官、髮型、年齡、身形比例、服裝、配色與配件完全一致；只改變視覺媒材、筆觸、光線與畫面質感，不重新設計角色。",
-    `視覺風格：${stylePrompt}`,
-  ].join("\n\n");
+function showGenerationConfirmation(status, label, message) {
+  status.textContent = message;
+  status.dataset.kind = "warning";
+  label.textContent = "設定已確認";
 }
 
-async function writeClipboard(text) {
-  if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(text);
-    return;
-  }
-  const fallback = document.createElement("textarea");
-  fallback.className = "clipboard-fallback";
-  fallback.value = text;
-  fallback.setAttribute("readonly", "");
-  document.body.append(fallback);
-  fallback.select();
-  const didCopy = document.execCommand("copy");
-  fallback.remove();
-  if (!didCopy) {
-    throw new Error("瀏覽器不允許複製");
-  }
+function clearGenerationConfirmation(status, label) {
+  status.textContent = "";
+  status.dataset.kind = "";
+  label.textContent = "確認生成";
 }
 
-function showCopyStatus(message, kind) {
-  elements.promptCopyStatus.textContent = message;
-  elements.promptCopyStatus.dataset.kind = kind;
-  elements.copyPromptButtonLabel.textContent =
-    kind === "success" ? "已複製提示詞" : "複製完整提示詞";
+function clearCharacterGenerationStatus() {
+  clearGenerationConfirmation(
+    elements.characterGenerationStatus,
+    elements.confirmCharacterButtonLabel,
+  );
 }
 
-function clearCopyStatus() {
-  elements.promptCopyStatus.textContent = "";
-  elements.promptCopyStatus.dataset.kind = "";
-  elements.copyPromptButtonLabel.textContent = "複製完整提示詞";
+function clearSceneGenerationStatus() {
+  clearGenerationConfirmation(
+    elements.sceneGenerationStatus,
+    elements.confirmSceneButtonLabel,
+  );
 }
 
-async function copyCharacterPrompt() {
+function confirmCharacterGeneration() {
   if (!elements.characterForm.reportValidity()) {
     return;
   }
-  try {
-    await writeClipboard(buildCharacterPrompt());
-    showCopyStatus(
-      "已複製角色設定、一致性規則與所選風格提示詞。",
-      "success",
-    );
-  } catch (_error) {
-    showCopyStatus(
-      "瀏覽器無法自動複製，請從風格櫥窗內手動選取提示詞。",
-      "error",
-    );
+  showGenerationConfirmation(
+    elements.characterGenerationStatus,
+    elements.confirmCharacterButtonLabel,
+    "角色生成 Agent 尚未接入；目前只確認本頁設定，不會送出或建立圖片。",
+  );
+}
+
+function confirmSceneGeneration() {
+  if (!elements.sceneForm.reportValidity()) {
+    return;
   }
+  showGenerationConfirmation(
+    elements.sceneGenerationStatus,
+    elements.confirmSceneButtonLabel,
+    "場景生成 Agent 尚未接入；目前只確認本頁設定，不會送出或建立圖片。",
+  );
 }
 
 function applySceneShowcaseCatalog(items) {
@@ -1434,6 +1433,7 @@ function updateSceneShowcase() {
     ? selected.value
     : "architectural";
   elements.sceneHeroArt.className = `scene-stage direction-${direction}`;
+  clearSceneGenerationStatus();
 }
 
 function updateHash(tabName) {
@@ -1517,10 +1517,20 @@ for (const textarea of document.querySelectorAll(
 }
 
 elements.styleGrid.addEventListener("change", updateCharacterShowcase);
-elements.characterPrompt.addEventListener("input", clearCopyStatus);
+elements.characterPrompt.addEventListener(
+  "input",
+  clearCharacterGenerationStatus,
+);
 elements.characterForm.addEventListener("submit", (event) => {
   event.preventDefault();
-  void copyCharacterPrompt();
+  confirmCharacterGeneration();
+});
+elements.scenePrompt.addEventListener("input", clearSceneGenerationStatus);
+elements.sceneLight.addEventListener("change", clearSceneGenerationStatus);
+elements.sceneScale.addEventListener("change", clearSceneGenerationStatus);
+elements.sceneForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  confirmSceneGeneration();
 });
 
 for (const input of document.querySelectorAll(

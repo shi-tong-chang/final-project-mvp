@@ -362,7 +362,7 @@ def _assert_no_horizontal_overflow(page: Page) -> None:
     assert metrics["bodyWidth"] <= metrics["viewportWidth"] + 1
 
 
-def test_gateway_page_style_showcase_prompt_copy_and_responsive_layout(
+def test_gateway_page_generation_confirmation_history_and_responsive_layout(
     tmp_path: Path,
 ) -> None:
     fake = BrowserFakeCodexClient()
@@ -374,9 +374,15 @@ def test_gateway_page_style_showcase_prompt_copy_and_responsive_layout(
         context = browser.new_context(
             viewport={"width": 1440, "height": 960},
             locale="zh-TW",
-            permissions=["clipboard-read", "clipboard-write"],
         )
         page = context.new_page()
+        mutation_requests: list[str] = []
+
+        def record_mutation(request: Request) -> None:
+            if request.method != "GET":
+                mutation_requests.append(f"{request.method} {request.url}")
+
+        page.on("request", record_mutation)
         page.goto(base_url, wait_until="networkidle")
 
         assert page.locator("h1").inner_text() == "故事工作台"
@@ -401,22 +407,64 @@ def test_gateway_page_style_showcase_prompt_copy_and_responsive_layout(
         assert "style-dark-fairytale" in (
             page.locator("#character-hero-art").get_attribute("class") or ""
         )
+        assert page.locator("#copy-character-prompt").count() == 0
+        assert page.locator("#confirm-character-generation").inner_text() == "確認生成"
+        assert page.locator("#character-history").is_visible()
+        assert page.locator("#character-history").get_attribute("data-state") == "empty"
+        assert page.locator("#character-history-list .history-empty").count() == 1
+        assert page.get_by_text("尚無角色紀錄", exact=True).is_visible()
+
+        character_editor = page.locator(
+            "#character-style-form > .editor-stack"
+        ).bounding_box()
+        character_showcase = page.locator(
+            "#character-panel .character-showcase"
+        ).bounding_box()
+        character_history = page.locator("#character-history").bounding_box()
+        assert character_editor and character_showcase and character_history
+        assert character_editor["x"] < character_showcase["x"] < character_history["x"]
 
         character_description = "銀白短髮、琥珀眼睛的鐘錶修復師，穿深藍工作服。"
         page.locator("#character-prompt").fill(character_description)
-        page.locator("#copy-character-prompt").click()
+        page.locator("#confirm-character-generation").click()
         page.get_by_text(
-            "已複製角色設定、一致性規則與所選風格提示詞。",
+            "角色生成 Agent 尚未接入；目前只確認本頁設定，不會送出或建立圖片。",
             exact=True,
         ).wait_for()
-        copied_prompt = page.evaluate("() => navigator.clipboard.readText()")
-        assert character_description in copied_prompt
-        assert "五官、髮型、年齡、身形比例、服裝、配色與配件完全一致" in (copied_prompt)
-        assert "黑暗童話插畫風格" in copied_prompt
+        assert (
+            page.locator("#confirm-character-generation-label").inner_text()
+            == "設定已確認"
+        )
+        assert page.locator("#character-history").get_attribute("data-state") == "empty"
 
         page.locator("#character-tab").press("ArrowDown")
         assert page.locator("#scene-tab").get_attribute("aria-selected") == "true"
         assert page.locator("#scene-panel").is_visible()
+        assert page.locator("#confirm-scene-generation").inner_text() == "確認生成"
+        assert page.locator("#scene-history").is_visible()
+        assert page.locator("#scene-history").get_attribute("data-state") == "empty"
+        assert page.locator("#scene-history-list .history-empty").count() == 1
+        assert page.get_by_text("尚無場景紀錄", exact=True).is_visible()
+
+        scene_editor = page.locator(
+            "#scene-generation-form > .editor-stack"
+        ).bounding_box()
+        scene_showcase = page.locator("#scene-panel .scene-showcase").bounding_box()
+        scene_history = page.locator("#scene-history").bounding_box()
+        assert scene_editor and scene_showcase and scene_history
+        assert scene_editor["x"] < scene_showcase["x"] < scene_history["x"]
+
+        page.locator("#scene-prompt").fill("雨後的老城鐘樓工坊，冷藍月光穿過百葉窗。")
+        page.locator("#confirm-scene-generation").click()
+        page.get_by_text(
+            "場景生成 Agent 尚未接入；目前只確認本頁設定，不會送出或建立圖片。",
+            exact=True,
+        ).wait_for()
+        assert (
+            page.locator("#confirm-scene-generation-label").inner_text() == "設定已確認"
+        )
+        assert page.locator("#scene-history").get_attribute("data-state") == "empty"
+
         page.get_by_role("tab", name="生成分鏡").click()
         assert page.locator("#storyboard-panel").is_visible()
         page.get_by_role("tab", name="生成角色").click()
@@ -424,6 +472,28 @@ def test_gateway_page_style_showcase_prompt_copy_and_responsive_layout(
         _assert_no_horizontal_overflow(page)
         desktop_screenshot = tmp_path / "style-showcase-desktop.png"
         page.screenshot(path=desktop_screenshot, full_page=True)
+
+        page.set_viewport_size({"width": 1101, "height": 900})
+        page.reload(wait_until="networkidle")
+        style_cards.first.wait_for(state="visible")
+        narrow_showcase = page.locator(
+            "#character-panel .character-showcase"
+        ).bounding_box()
+        narrow_history = page.locator("#character-history").bounding_box()
+        assert narrow_showcase and narrow_history
+        assert narrow_history["x"] > narrow_showcase["x"]
+        _assert_no_horizontal_overflow(page)
+
+        page.set_viewport_size({"width": 1100, "height": 900})
+        page.reload(wait_until="networkidle")
+        style_cards.first.wait_for(state="visible")
+        stacked_showcase = page.locator(
+            "#character-panel .character-showcase"
+        ).bounding_box()
+        stacked_history = page.locator("#character-history").bounding_box()
+        assert stacked_showcase and stacked_history
+        assert stacked_history["y"] > stacked_showcase["y"]
+        _assert_no_horizontal_overflow(page)
 
         page.set_viewport_size({"width": 390, "height": 844})
         page.reload(wait_until="networkidle")
@@ -443,12 +513,19 @@ def test_gateway_page_style_showcase_prompt_copy_and_responsive_layout(
         assert len(first_two_positions) == 2
         assert abs(first_two_positions[0]["top"] - first_two_positions[1]["top"]) < 2
         assert first_two_positions[1]["left"] > first_two_positions[0]["left"]
+        mobile_showcase = page.locator(
+            "#character-panel .character-showcase"
+        ).bounding_box()
+        mobile_history = page.locator("#character-history").bounding_box()
+        assert mobile_showcase and mobile_history
+        assert mobile_history["y"] > mobile_showcase["y"]
         _assert_no_horizontal_overflow(page)
         mobile_screenshot = tmp_path / "style-showcase-mobile.png"
         page.screenshot(path=mobile_screenshot, full_page=True)
 
         assert desktop_screenshot.stat().st_size > 20_000
         assert mobile_screenshot.stat().st_size > 10_000
+        assert mutation_requests == []
         assert fake.thread_count == 0
         assert fake.turn_count == 0
         context.close()

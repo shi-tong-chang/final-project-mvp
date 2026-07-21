@@ -623,3 +623,54 @@
     `.codex/agents/character_generator.toml` 與
     `.codex/agents/scene_generator.toml` 後，再依 strict agent 插槽契約
     接入角色四視圖與單張場景生成。
+
+## 2026-07-21 04:01 UTC（2026-07-21 12:01 Asia/Taipei）— 角色／場景確認生成與歷史軌
+
+- **目的**：依使用者要求，在角色與場景工作區最右側加入已生成資產的
+  歷史位置，並把角色頁底部「複製完整提示詞」改成未來可接生成 Agent
+  的「確認生成」入口；本輪 Agent 尚未交付，不冒充已完成圖片。
+- **執行內容**：
+  - 角色與場景桌面版改為設定、主預覽、歷史軌三欄；1100px 以下歷史軌
+    改為橫向跨欄，900px 以下依序單欄堆疊。
+  - 兩條歷史軌各提供標題、零筆計數、code-native 空狀態與待 Agent 接線
+    說明；沒有建立假歷史、外部圖片或持久化資料。
+  - 角色與場景表單都提供「確認生成」。通過原生表單驗證後只顯示
+    `Agent 尚未接入` 的 warning，修改任一生成設定會清除確認狀態；不送
+    HTTP mutation、不建立 Codex thread／turn，也不呼叫 ComfyUI。
+  - Browser regression 增加桌面三欄順序、兩頁空歷史、確認回饋、手機
+    堆疊與無水平溢位；HTTP smoke 確認舊複製 CTA 已移除。
+- **修改檔案**：
+  - `frontend/gateway/index.html`
+  - `frontend/gateway/app.js`
+  - `frontend/gateway/styles.css`
+  - `tests/e2e/test_codex_gateway_page.py`
+  - `tests/test_codex_gateway_api.py`
+  - `README.md`
+  - `docs/PROJECT_SPEC.md`
+  - `docs/tasks/CODEX_GATEWAY_V2.md`
+  - `docs/tasks/PROJECT_LOG.md`
+- **重要命令**：
+  - `.venv/bin/pytest`
+  - `.venv/bin/ruff format --check .`
+  - `.venv/bin/ruff check .`
+  - `.venv/bin/mypy backend runtime scripts tests`
+  - `node --check frontend/gateway/app.js`
+  - `git diff --check`
+  - Playwright 1440×960 與 390×844 screenshot regression／人工檢視。
+- **驗證結果**：
+  - pytest=`71 passed, 1 known Starlette TestClient/httpx2 deprecation warning`。
+  - Ruff format/check、mypy（41 files）、Node syntax 與 Git whitespace 全部
+    PASS；browser fake 的 thread／turn 計數維持零。
+  - 額外嘗試的 `uv lock --check` 因目前 shell 沒有全域 `uv` executable
+    而未執行；本輪沒有修改 `pyproject.toml` 或 `uv.lock`。
+- **發現事項**：
+  - 歷史軌目前是明確空的前端接點；專案仍不提供角色／場景生成資產的
+    儲存、命名、查詢或跨重啟歷史。
+  - 「確認生成」只建立可驗證的 UI 互動位置。正式接線時仍須新增 strict
+    request／response schema、server-owned Agent route 與安全的同源資產
+    URL，不能讓 Browser 傳 Agent path、instructions 或 shell 參數。
+- **下一步**：
+  - 等待角色／場景 Agent TOML 到位後，分別新增 typed 生成 endpoint 與
+    server-owned job lifecycle，再把成功且已命名的結果渲染進對應歷史軌。
+  - 歷史若要跨 Gateway 重啟保存，需由產品另行決定本機資料夾或資料庫
+    契約；本輪不先行假設。

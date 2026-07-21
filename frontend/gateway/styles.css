@@ -377,6 +377,13 @@ p {
   gap: 24px;
 }
 
+.generator-layout.has-history {
+  grid-template-columns:
+    minmax(480px, 1.45fr) minmax(250px, 0.72fr)
+    minmax(170px, 0.42fr);
+  gap: 18px;
+}
+
 .editor-stack {
   display: grid;
   min-width: 0;
@@ -1650,22 +1657,12 @@ select {
   transform: none;
 }
 
-.prompt-copy-status {
+.generation-status {
   min-height: 1.4em;
   margin: 4px 0 0;
   color: var(--ink-soft);
   font-size: 0.7rem;
   line-height: 1.4;
-}
-
-.clipboard-fallback {
-  position: fixed;
-  top: -9999px;
-  left: -9999px;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
 }
 
 /* 展示櫥窗 */
@@ -1874,12 +1871,154 @@ select {
   line-height: 1.75;
 }
 
-.prompt-copy-status[data-kind="success"] {
+.generation-status[data-kind="success"] {
   color: #347052;
 }
 
-.prompt-copy-status[data-kind="error"] {
+.generation-status[data-kind="error"] {
   color: #a1472d;
+}
+
+.generation-status[data-kind="warning"] {
+  color: #76571d;
+}
+
+/* 角色／場景歷史軌 */
+.history-rail {
+  position: sticky;
+  top: 4px;
+  display: grid;
+  overflow: hidden;
+  min-width: 0;
+  align-content: start;
+  border: 1px solid #aeb6af;
+  border-radius: var(--radius-md);
+  background: #ecebe3;
+  box-shadow: var(--shadow-sm);
+}
+
+.history-rail-heading {
+  display: flex;
+  min-height: 70px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 15px 14px 13px;
+  border-bottom: 1px solid #c7ccc6;
+  background: #f7f5ed;
+}
+
+.history-rail-heading p {
+  margin-bottom: 5px;
+  color: var(--accent-dark);
+  font-size: 0.55rem;
+  font-weight: 850;
+  letter-spacing: 0.14em;
+}
+
+.history-rail-heading h3 {
+  margin: 0;
+  font-family: Georgia, "Noto Serif TC", "Songti TC", serif;
+  font-size: 1rem;
+  font-weight: 560;
+  line-height: 1.25;
+}
+
+.history-count {
+  display: grid;
+  min-width: 27px;
+  height: 27px;
+  place-items: center;
+  border: 1px solid #aeb7af;
+  border-radius: 50%;
+  color: var(--ink-soft);
+  font-size: 0.62rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 850;
+}
+
+.history-list {
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+  padding: 12px;
+}
+
+.history-empty {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+  padding: 8px;
+  border: 1px dashed #a7b0a9;
+  border-radius: 9px;
+  background: rgb(255 255 255 / 36%);
+}
+
+.history-empty-visual {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 4 / 5;
+  border-radius: 7px;
+  background: #30443f;
+}
+
+.history-character-visual {
+  background:
+    radial-gradient(circle at 50% 31%, #d9ad89 0 12%, transparent 13%),
+    radial-gradient(ellipse at 50% 83%, #4f7976 0 34%, transparent 35%),
+    linear-gradient(155deg, #d89a68, #253b3a 70%);
+}
+
+.history-character-visual::after {
+  position: absolute;
+  inset: 8px;
+  border: 1px solid rgb(255 255 255 / 28%);
+  border-radius: 5px;
+  content: "";
+}
+
+.history-scene-visual {
+  background:
+    linear-gradient(90deg, #425b57 0 34%, transparent 34%),
+    linear-gradient(0deg, #7d5c43 0 21%, transparent 21%),
+    radial-gradient(circle at 75% 22%, #d7cfaa 0 8%, transparent 9%),
+    #263c3d;
+}
+
+.history-scene-visual::after {
+  position: absolute;
+  right: 13%;
+  bottom: 24%;
+  width: 31%;
+  height: 37%;
+  border: 3px solid #6f8b84;
+  background: #1e3031;
+  content: "";
+}
+
+.history-empty strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-empty > span:last-child {
+  color: var(--ink-soft);
+  font-size: 0.62rem;
+  line-height: 1.55;
+}
+
+.history-rail-note {
+  padding: 0 12px 13px;
+  margin: 0;
+  color: var(--ink-faint);
+  font-size: 0.5rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  line-height: 1.5;
 }
 
 .contact-sheet {
@@ -2401,9 +2540,38 @@ select {
   }
 }
 
+@media (max-width: 1100px) {
+  .generator-layout.has-history {
+    grid-template-columns: minmax(440px, 1.35fr) minmax(240px, 0.7fr);
+  }
+
+  .history-rail {
+    position: relative;
+    top: auto;
+    grid-column: 1 / -1;
+  }
+
+  .history-empty {
+    grid-template-columns: 110px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .history-empty-visual {
+    grid-row: 1 / span 2;
+  }
+}
+
 @media (max-width: 900px) {
   .generator-layout {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .generator-layout.has-history {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .history-rail {
+    grid-column: auto;
   }
 
   .showcase-card {

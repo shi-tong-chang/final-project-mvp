@@ -105,7 +105,7 @@
             <span class="phase-tag">20 種風格</span>
           </div>
 
-          <form id="character-style-form" class="generator-layout">
+          <form id="character-style-form" class="generator-layout has-history">
             <div class="editor-stack">
               <section class="paper-card brief-card" aria-labelledby="character-brief-title">
                 <div class="card-title-row">
@@ -150,20 +150,23 @@
 
               <div class="action-bar">
                 <div>
-                  <strong>角色設定＋風格提示詞</strong>
-                  <span>只建立可重現的完整提示詞，目前不會啟動圖片生成。</span>
+                  <strong>確認角色生成設定</strong>
+                  <span>角色生成 Agent 尚待接入；目前確認不會送出或建立圖片。</span>
                   <p
-                    id="prompt-copy-status"
-                    class="prompt-copy-status"
+                    id="character-generation-status"
+                    class="generation-status"
                     role="status"
                     aria-live="polite"
                   ></p>
                 </div>
-                <button id="copy-character-prompt" class="primary-button" type="submit">
-                  <span id="copy-character-prompt-label">複製完整提示詞</span>
+                <button
+                  id="confirm-character-generation"
+                  class="primary-button"
+                  type="submit"
+                >
+                  <span id="confirm-character-generation-label">確認生成</span>
                   <svg aria-hidden="true" viewBox="0 0 24 24">
-                    <rect x="8" y="8" width="11" height="11" rx="2"></rect>
-                    <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path>
+                    <path d="M5 12h14M13 6l6 6-6 6"></path>
                   </svg>
                 </button>
               </div>
@@ -199,6 +202,36 @@
                 </blockquote>
               </div>
             </aside>
+
+            <aside
+              id="character-history"
+              class="history-rail"
+              aria-labelledby="character-history-title"
+              data-state="empty"
+            >
+              <div class="history-rail-heading">
+                <div>
+                  <p>HISTORY</p>
+                  <h3 id="character-history-title">已生成角色</h3>
+                </div>
+                <span class="history-count" aria-label="目前零筆角色紀錄">0</span>
+              </div>
+              <div
+                id="character-history-list"
+                class="history-list"
+                aria-live="polite"
+              >
+                <div class="history-empty">
+                  <span
+                    class="history-empty-visual history-character-visual"
+                    aria-hidden="true"
+                  ></span>
+                  <strong>尚無角色紀錄</strong>
+                  <span>角色 Agent 完成圖片並命名後，縮圖會依時間顯示在這裡。</span>
+                </div>
+              </div>
+              <p class="history-rail-note">HISTORY SLOT · 待 Agent 接線</p>
+            </aside>
           </form>
         </section>
 
@@ -221,7 +254,7 @@
             <span class="phase-tag">素材待補</span>
           </div>
 
-          <div class="generator-layout">
+          <form id="scene-generation-form" class="generator-layout has-history">
             <div class="editor-stack">
               <section class="paper-card brief-card" aria-labelledby="scene-brief-title">
                 <div class="card-title-row">
@@ -309,11 +342,27 @@
                 </div>
               </fieldset>
 
-              <div class="action-bar is-placeholder">
+              <div class="action-bar">
                 <div>
-                  <strong>場景功能預留</strong>
-                  <span>目前設定只在頁面內預覽，正式生成接線會在後續階段加入。</span>
+                  <strong>確認場景生成設定</strong>
+                  <span>場景生成 Agent 尚待接入；目前確認不會送出或建立圖片。</span>
+                  <p
+                    id="scene-generation-status"
+                    class="generation-status"
+                    role="status"
+                    aria-live="polite"
+                  ></p>
                 </div>
+                <button
+                  id="confirm-scene-generation"
+                  class="primary-button"
+                  type="submit"
+                >
+                  <span id="confirm-scene-generation-label">確認生成</span>
+                  <svg aria-hidden="true" viewBox="0 0 24 24">
+                    <path d="M5 12h14M13 6l6 6-6 6"></path>
+                  </svg>
+                </button>
               </div>
             </div>
 
@@ -340,7 +389,37 @@
                 <span>場景候選 02</span>
               </div>
             </aside>
-          </div>
+
+            <aside
+              id="scene-history"
+              class="history-rail"
+              aria-labelledby="scene-history-title"
+              data-state="empty"
+            >
+              <div class="history-rail-heading">
+                <div>
+                  <p>HISTORY</p>
+                  <h3 id="scene-history-title">已生成場景</h3>
+                </div>
+                <span class="history-count" aria-label="目前零筆場景紀錄">0</span>
+              </div>
+              <div
+                id="scene-history-list"
+                class="history-list"
+                aria-live="polite"
+              >
+                <div class="history-empty">
+                  <span
+                    class="history-empty-visual history-scene-visual"
+                    aria-hidden="true"
+                  ></span>
+                  <strong>尚無場景紀錄</strong>
+                  <span>場景 Agent 完成圖片並命名後，縮圖會依時間顯示在這裡。</span>
+                </div>
+              </div>
+              <p class="history-rail-note">HISTORY SLOT · 待 Agent 接線</p>
+            </aside>
+          </form>
         </section>
 
         <section

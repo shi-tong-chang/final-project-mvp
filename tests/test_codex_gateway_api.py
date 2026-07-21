@@ -116,6 +116,11 @@ def test_gateway_api_serves_workspace_catalog_and_codex_turn() -> None:
         page = client.get("/")
         assert page.status_code == 200
         assert "故事工作台" in page.text
+        assert 'id="character-history"' in page.text
+        assert 'id="scene-history"' in page.text
+        assert 'id="confirm-character-generation"' in page.text
+        assert 'id="confirm-scene-generation"' in page.text
+        assert "複製完整提示詞" not in page.text
         assert page.headers["x-content-type-options"] == "nosniff"
         assert "frame-ancestors 'none'" in page.headers["content-security-policy"]
         assert client.get("/api/docs").status_code == 404
