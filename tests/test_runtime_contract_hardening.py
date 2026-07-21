@@ -33,6 +33,10 @@ from runtime.manager import (
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
+def _passing_platform_check() -> RuntimeCheck:
+    return RuntimeCheck("platform", "pass", "PLATFORM_OK", "ok")
+
+
 class _FakeUvBootstrap:
     def __init__(self, tools_root: Path, lock: object) -> None:
         del lock
@@ -190,6 +194,7 @@ def _process_record(name: str, pid: int) -> ProcessRecord:
 @pytest.mark.parametrize("missing_path", [".runtime", ".venv"])
 def test_install_rejects_unignored_runtime_paths_before_any_write(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
     missing_path: str,
 ) -> None:
     project_root = tmp_path / "repo"
@@ -201,6 +206,7 @@ def test_install_rejects_unignored_runtime_paths_before_any_write(
         runner=runner,
         uv_bootstrap_factory=_FakeUvBootstrap,
     )
+    monkeypatch.setattr(manager, "_platform_check", _passing_platform_check)
 
     with pytest.raises(RuntimeOperationError) as caught:
         manager.install()

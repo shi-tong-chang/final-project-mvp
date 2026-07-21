@@ -881,3 +881,32 @@
   合併後啟用 main 保護；owner 再加入組員 collaborator 並決定 LICENSE／
   CODEOWNERS。真實 RTX 5070 Ti 單／雙角色與選定後 4K 仍是獨立 opt-in
   驗收，不由本次版控工作冒充完成。
+
+## 2026-07-21 08:13 UTC（2026-07-21 16:13 Asia/Taipei）— Native Ubuntu CI 測試隔離修正
+
+- **目的**：修正 Pull Request #1 首次 `quality` job 在 GitHub-hosted native
+  Ubuntu 24.04 揭露的測試主機耦合，同時維持 production runtime 只支援
+  WSL2／Ubuntu 24.04／x86_64 的 fail-closed 契約。
+- **執行內容**：
+  - 首次遠端 CI 的 `browser-e2e` 在 fresh runner 以 51 秒通過，證明 locked
+    developer bootstrap 與 Chromium 路徑可用；`quality` 的 91 個非 Browser
+    測試中有五項在 runtime platform guard 提前失敗。
+  - 五項測試原本隱式依賴執行主機本身是 WSL2，導致它們在 native Ubuntu
+    無法走到真正要驗證的 Git ignore、managed/adopted install 與 unknown
+    port ownership 分支。
+  - 只在對應 unit test 顯式注入固定 PASS platform check；沒有修改
+    `runtime/manager.py`、沒有放寬正式 preflight，也沒有在 CI 偽造整個
+    runtime 或執行 GPU 安裝。
+- **修改檔案**：`tests/test_runtime_contract_hardening.py`、
+  `tests/test_runtime_setup.py`、`docs/tasks/PROJECT_LOG.md`。
+- **重要命令**：
+  - `gh pr checks 1 --watch`、`gh run view 29813249636 --log-failed`
+  - `.venv/bin/pytest tests/test_runtime_contract_hardening.py tests/test_runtime_setup.py`
+  - `.venv/bin/pytest`、Ruff format/check、mypy、`git diff HEAD --check`
+- **驗證結果**：原五個失敗案例全部通過；兩個 runtime test module=`26
+  passed`；本機 full pytest=`94 passed, 1 known warning`；Ruff、mypy（49
+  files）與 Git whitespace 全部 PASS。第二輪遠端 CI 待本修正推送後重跑。
+- **發現事項**：產品限制與測試可攜性是兩件不同責任；測試其他 runtime
+  分支時應顯式固定 platform prerequisite，不能靠開發者剛好位於 WSL。
+- **下一步**：推送 follow-up commit，要求同一 PR 的 `quality` 與
+  `browser-e2e` 全部在 fresh runner 通過後才合併與啟用 main 保護。

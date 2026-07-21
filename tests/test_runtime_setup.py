@@ -23,6 +23,7 @@ from runtime.downloads import (
 from runtime.manager import (
     CommandResult,
     ModelsMode,
+    RuntimeCheck,
     RuntimeConfig,
     RuntimeManager,
     RuntimeMode,
@@ -31,6 +32,10 @@ from runtime.manager import (
 from runtime.spec import ModelLock, RuntimeLock, load_runtime_lock
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _passing_platform_check() -> RuntimeCheck:
+    return RuntimeCheck("platform", "pass", "PLATFORM_OK", "ok")
 
 
 class SpyRunner:
@@ -551,6 +556,7 @@ def test_managed_install_is_pinned_idempotent_and_uses_external_models(
         runner=runner,
         uv_bootstrap_factory=FakeUvBootstrap,
     )
+    monkeypatch.setattr(manager, "_platform_check", _passing_platform_check)
     monkeypatch.setattr(manager, "_http_health", lambda port, path: "free")
 
     first = manager.install(
@@ -614,6 +620,7 @@ def test_adopted_install_never_mutates_source_tree(
         runner=runner,
         uv_bootstrap_factory=FakeUvBootstrap,
     )
+    monkeypatch.setattr(manager, "_platform_check", _passing_platform_check)
     monkeypatch.setattr(manager, "_http_health", lambda port, path: "free")
 
     result = manager.install(
@@ -660,10 +667,12 @@ def test_start_rejects_healthy_unowned_gateway_port(
         manager,
         "_preflight_checks",
         lambda config, full_model_hash: [
-            manager._platform_check(),
-            replace(
-                manager._platform_check(),
-                check_id="gateway-python",
+            _passing_platform_check(),
+            RuntimeCheck(
+                "gateway-python",
+                "pass",
+                "PYTHON_VERSION_OK",
+                "ok",
             ),
         ],
     )
