@@ -77,6 +77,26 @@ Ubuntu 內至少需要 `git` 與 `python3`。runtime controller 會從固定 URL
    若你使用的 Codex 版本直接在首次啟動時引導登入，照畫面完成即可。
    API key 或登入憑證不要寫進 repository。
 
+## 組員開發：clone 後先開分支
+
+一般 API、UI、文件與測試開發不需要先下載 ComfyUI 或 47.27 GB 模型。
+組員先從最新遠端 `main` 建立自己的分支，再用 repository 的輕量入口建立
+釘版 Python 與 locked dependencies：
+
+```bash
+git clone https://github.com/shi-tong-chang/final-project-mvp.git
+cd final-project-mvp
+git fetch --prune origin
+git switch -c feat/short-description origin/main
+python3 scripts/setup_dev.py
+```
+
+請勿直接在 `main` 修改或 push；完成後由 feature branch 開 Pull Request，
+通過 `quality` 與 `browser-e2e` CI 並由組員 review。分支命名、快速測試、
+完整 Browser 前置、本機素材保護及 commit checklist 詳見
+[`CONTRIBUTING.md`](CONTRIBUTING.md)。真實 GPU workflow 才需要下一節的
+完整「安裝環境」。
+
 ## 最短使用流程：交給 Codex
 
 先在 Ubuntu 內 clone：
@@ -386,30 +406,40 @@ python3 scripts/fpmvp_runtime.py status
 
 ## 開發驗證
 
-安裝完成後，從 repository 根目錄執行：
+一般開發先執行輕量 bootstrap；它不建立 `.runtime/`，也不下載 ComfyUI
+或模型：
 
 ```bash
-.venv/bin/pytest
+python3 scripts/setup_dev.py
+```
+
+不需要 Browser 的快速迴圈：
+
+```bash
+.venv/bin/pytest -m "not browser"
 .venv/bin/ruff format --check .
 .venv/bin/ruff check .
 .venv/bin/mypy backend runtime scripts tests
 node --check frontend/gateway/app.js
-git diff --check
+git diff HEAD --check
 ```
 
-Browser E2E 另外需要 Playwright Chromium 與 Ubuntu 系統相依：
+完整 `.venv/bin/pytest` 會包含 Browser E2E；第一次執行前先安裝 Playwright
+Chromium 與 Ubuntu 系統相依：
 
 ```bash
 sudo .venv/bin/playwright install-deps chromium
 .venv/bin/playwright install chromium
-.venv/bin/pytest tests/e2e/test_codex_gateway_page.py
+.venv/bin/pytest
 ```
 
 `install-deps` 會修改 Ubuntu 系統套件，因此只在明確要跑 Browser E2E 時
-執行；一般啟動網站不需要 sudo。
+執行；一般啟動網站與非 Browser 測試不需要 sudo。Commit 前另執行
+`git diff --cached --check`，避免只檢查到 unstaged 內容。
 
 更詳細的規格與重現資料：
 
+- [組員開發與版本控制](CONTRIBUTING.md)
 - [產品契約](docs/PROJECT_SPEC.md)
 - [Clone-to-run 契約與驗收](docs/tasks/CLONE_TO_RUN.md)
 - [分鏡與選定後 4K 基礎接線](docs/tasks/STORYBOARD_WORKFLOW_INTEGRATION.md)

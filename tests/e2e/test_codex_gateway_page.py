@@ -13,6 +13,7 @@ from email.policy import default
 from pathlib import Path
 from urllib.parse import urlsplit
 
+import pytest
 from app.core.gateway_settings import GatewaySettings
 from app.core.workflow_settings import WorkflowSettings
 from app.gateway_main import create_gateway_app
@@ -23,6 +24,8 @@ from app.services.codex_gateway.client import (
 )
 from playwright.sync_api import Page, Request, Route, sync_playwright
 from uvicorn import Config, Server
+
+pytestmark = pytest.mark.browser
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ONE_PIXEL_PNG = base64.b64decode(
