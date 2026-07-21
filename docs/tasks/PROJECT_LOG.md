@@ -678,3 +678,66 @@
     server-owned job lifecycle，再把成功且已命名的結果渲染進對應歷史軌。
   - 歷史若要跨 Gateway 重啟保存，需由產品另行決定本機資料夾或資料庫
     契約；本輪不先行假設。
+
+## 2026-07-21 06:41 UTC（2026-07-21 14:41 Asia/Taipei）— 本機圖庫與單／雙角色分鏡自動路由
+
+- **目的**：讓角色頁與場景頁顯示已由未來 Agent 產出的持久化素材，並讓
+  分鏡頁從圖庫選一或兩位角色加一個場景；後端依角色數量自行決定 B1 或
+  B1→B2，Browser 不得指定工作流。
+- **執行內容**：
+  - 新增 Git-ignored `.runtime/asset-library/`、strict metadata、opaque ID、
+    canonical PNG、atomic directory publication，以及角色四視圖／場景單圖
+    的唯讀同源 API；Browser 沒有素材寫入 route。
+  - 新增 trusted `scripts/register_generated_asset.py`，供未來 Agent
+    controller 或人類匯入完整角色四視圖與場景定稿；來源路徑不寫入
+    metadata。
+  - 分鏡圖庫 request 只接受一至兩個不重複角色 ID、一個場景 ID、提示詞
+    與候選數。單角色固定跑 `wf_dual_B1`；雙角色每張候選固定跑
+    `wf_dual_B1` → 正規化中間圖 → `wf_dual_B2`。
+  - B1／B2 皆以 SHA-256 pin，server prompt guard 保留既有角色身份、外觀
+    與場景結構；seed、node、模型、output prefix 與 ComfyUI filename 都不
+    由 Browser 控制。
+  - 角色與場景歷史軌改接真實圖庫；分鏡頁支援依點選順序選兩位角色、
+    單選一個場景、顯示實際 route 與各階段 seed，並保留單角色手動上傳
+    fallback。只有 server 已確認的最終候選能進 4K。
+  - `.codex/agents/README.md` 納入 Git，保留未來兩份 Agent TOML 的可見
+    位置；Agent 尚未交付時「確認生成」仍維持誠實的 pending 狀態。
+- **修改檔案**：
+  - `backend/app/api/routes/assets.py`、`backend/app/schemas/api/assets.py`、
+    `backend/app/services/assets/`、`scripts/register_generated_asset.py`
+  - workflow routes／schemas／settings／adapter／service 與 `gateway_main.py`
+  - `frontend/gateway/index.html`、`app.js`、`styles.css`
+  - runtime model/workflow allowlist、`.gitattributes`、`.env.example`
+  - unit／browser regression、README、AGENTS 與產品／任務文件
+- **重要命令**：
+  - `.venv/bin/pytest`
+  - `.venv/bin/ruff format --check .`
+  - `.venv/bin/ruff check .`
+  - `.venv/bin/mypy backend runtime scripts tests`
+  - `node --check frontend/gateway/app.js`
+  - `git diff --check`
+  - Playwright 角色／場景圖庫、雙角色排序、單／雙 route 與手動上傳回歸
+  - `git push origin main`
+- **驗證結果**：
+  - pytest=`84 passed, 1 known Starlette TestClient/httpx2 deprecation warning`。
+  - Ruff format/check、mypy（47 files）、Node syntax、JSON parse 與 Git
+    whitespace 全部 PASS。
+  - Browser regression 使用三個角色與兩個場景驗證四視圖、選取順序、
+    第三位角色禁用、strict JSON、雙角色 B1→B2、單角色 B1 與 stage seed；
+    Codex thread／turn 計數仍為零。
+  - Feature commit
+    `28cd5d58844225aaa4381fd6797d620b0c23195d` 已成功推送至 GitHub
+    `main`，沒有 force push。
+- **發現事項**：
+  - 角色／場景 Agent 仍未接入；目前可以用 trusted CLI 匯入既有成品，
+    但角色／場景頁的「確認生成」不會假裝已啟動 Agent。
+  - 本輪驗證涵蓋固定 graph payload、B1 中間圖傳遞、B2 失敗／shutdown
+    cancellation、retained-byte cap 與只有最終候選可選；尚未在目標 RTX
+    5070 Ti 執行真實雙角色 GPU 重放。
+  - 圖庫跨 Gateway 重啟保留；分鏡 run、候選與 4K job 仍由單一 process
+    暫存，重啟後不恢復。
+- **下一步**：
+  - 組員交付 `character_generator.toml` 與 `scene_generator.toml` 後，依
+    strict Agent 插槽契約接線，成功輸出再呼叫 trusted registration CLI。
+  - 在目標 WSL／RTX 5070 Ti 以黃金素材實跑單角色、雙角色及選定後 4K，
+    記錄耗時、VRAM、版本與肉眼一致性結果。
