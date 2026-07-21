@@ -910,3 +910,39 @@
   分支時應顯式固定 platform prerequisite，不能靠開發者剛好位於 WSL。
 - **下一步**：推送 follow-up commit，要求同一 PR 的 `quality` 與
   `browser-e2e` 全部在 fresh runner 通過後才合併與啟用 main 保護。
+
+## 2026-07-21 08:21 UTC（2026-07-21 16:21 Asia/Taipei）— 團隊版控治理啟用
+
+- **目的**：把 clone-to-branch 開發基線正式合併到 `main`，並啟用可由
+  GitHub 強制執行的 Pull Request 與 CI 邊界，讓後續組員從乾淨 main
+  開分支開發。
+- **執行內容**：
+  - Pull Request #1 的第二輪 `quality` 與 `browser-e2e` 都在 fresh runner
+    通過後，以 squash merge 合併為 `f3b8e7d`；合併後的 main push workflow
+    run `29813628862` 也再次通過兩個 job。
+  - 啟用 main branch protection：required checks 為 strict 的 `quality` 與
+    `browser-e2e`、要求 Pull Request、dismiss stale reviews、enforce admins、
+    conversation resolution 與 linear history；force push 與 branch deletion
+    均禁止。
+  - GitHub 目前只有 owner `shi-tong-chang` 一位 collaborator。為避免尚無
+    第二位可審核者時把 repository 鎖死，required approval 暫為 0；新增
+    至少一位實際組員後應提高為 1，再依團隊 ownership 決定 CODEOWNERS。
+  - 本機 fetch/prune 後 fast-forward 至受保護 main；只在確認 safety stash
+    內容已完整發布、squash 前後 tree 相同後，才移除 stash 與本機舊 feature
+    branch。最終 main 與 origin/main 相同，工作樹乾淨。
+- **修改檔案**：`docs/tasks/PROJECT_LOG.md`。
+- **重要命令**：
+  - `gh pr checks 1 --watch`、`gh pr merge 1 --squash --delete-branch`
+  - `gh run view 29813628862`、GitHub branch protection API 查詢／設定
+  - `git fetch --prune origin`、`git merge --ff-only origin/main`、
+    `git status --short --branch`
+- **驗證結果**：PR #1=`MERGED`；merge SHA=`f3b8e7d02e03197b823c5bcec0a3cce66fbf548d`；
+  PR 與 main push 的 `quality`／`browser-e2e` 全部 SUCCESS；GitHub 回報 main
+  protection enforcement level 為 everyone，strict checks、admin enforcement、
+  linear history 與 conversation resolution 均已啟用，force push／deletion
+  均停用。沒有執行或聲稱 RTX 5070 Ti／ComfyUI GPU 重放。
+- **發現事項**：目前組員若尚未被加入 collaborator，仍可從 public repository
+  fork 後送 Pull Request；若要直接 push feature branch，owner 必須先加入其
+  GitHub 帳號。Repository 仍未選定 LICENSE，本輪不替 owner 推定授權。
+- **下一步**：owner 提供組員 GitHub 帳號並加入 collaborator 後，把 required
+  approval 調為 1；再決定 LICENSE 與是否建立具名 CODEOWNERS。
