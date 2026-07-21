@@ -782,3 +782,28 @@
   刪除或重寫既有 `.runtime`。
 - **下一步**：維持 `.local-data` 為使用者素材 authority；接入 Agent 時
   只呼叫同一 trusted registration CLI，不另建第二套歷史儲存位置。
+
+## 2026-07-21 07:10 UTC（2026-07-21 15:10 Asia/Taipei）— 記錄 Qwen-Image-Edit-2511 提示詞策略
+
+- **目的**：保留目標模型的產品端提示詞寫法，並區分使用者意圖、
+  後端固定 guard 與未來可選 prompt-refinement Agent 的責任。
+- **執行內容**：
+  - 記錄 2511 應使用自然語言編輯指令，Browser 欄位聚焦位置、
+    朝向、逐肢體動作、接觸關係、尺度與入鏡範圍。
+  - 記錄畫面座標、正面特徵描述、道具形狀、單輪單目標、
+    3-seed QA 與不對稱特徵需人工檢查等實測原則。
+  - 記錄未來 Agent 只能作為可選改寫層，必須顯示結果供使用者
+    確認，且不能覆寫 server-owned guard、圖片順序或 workflow 路由。
+  - 明示 4K 精修提示詞屬另一條處理鏈，不與 2511 人物插入提示詞
+    混用。
+- **修改檔案**：`docs/workflows/REF_人物場景合成與4K放大.md`、
+  `docs/tasks/PROJECT_LOG.md`。
+- **重要命令**：官方 Qwen-Image-Edit-2511 model card／repository 唯讀對照、
+  `git diff --check`。
+- **驗證結果**：文件層變更；核對目前 adapter 仍是 Browser prompt 加入
+  固定 guard 後直接送入 server-owned workflow，沒有宣稱已存在的
+  prompt Agent。
+- **發現事項**：Qwen 官方提供 image-aware prompt enhancement 參考，
+  但 MVP 仍應先保留使用者可見、可確認與可追溯的最終提示詞。
+- **下一步**：若實作 prompt-refinement Agent，先定義 strict input/output schema、
+  圖像存取邊界與使用者確認 UI，再接到現有 adapter guard 之前。
