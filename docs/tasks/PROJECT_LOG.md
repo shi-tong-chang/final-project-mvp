@@ -657,12 +657,16 @@
   - `node --check frontend/gateway/app.js`
   - `git diff --check`
   - Playwright 1440×960 與 390×844 screenshot regression／人工檢視。
+  - `git push origin main`
 - **驗證結果**：
   - pytest=`71 passed, 1 known Starlette TestClient/httpx2 deprecation warning`。
   - Ruff format/check、mypy（41 files）、Node syntax 與 Git whitespace 全部
     PASS；browser fake 的 thread／turn 計數維持零。
   - 額外嘗試的 `uv lock --check` 因目前 shell 沒有全域 `uv` executable
     而未執行；本輪沒有修改 `pyproject.toml` 或 `uv.lock`。
+  - Feature commit
+    `2a7701bf30a7e7e1ec4c43f7754b603d81eaf477` 已成功推送至 GitHub
+    `main`，沒有 force push。
 - **發現事項**：
   - 歷史軌目前是明確空的前端接點；專案仍不提供角色／場景生成資產的
     儲存、命名、查詢或跨重啟歷史。
