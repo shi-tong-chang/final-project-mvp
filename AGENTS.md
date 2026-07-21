@@ -113,7 +113,7 @@ developer_instructions = """
 - 目前既有分鏡與 4K 直接由 typed FastAPI／ComfyUI adapter 執行，不建立
   Codex thread／turn。
 - Agent 產生正式角色或場景後，必須透過 repository 提供的 trusted
-  registration CLI 寫入 `.runtime/asset-library/`；不得自行拼接公開 URL、
+  registration CLI 寫入 `.local-data/asset-library/`；不得自行拼接公開 URL、
   直接改 metadata，或把生成資產提交進 Git。角色資產需有前／左／右／後
   四視圖，場景資產需有一張定稿圖。
 
@@ -141,7 +141,7 @@ developer_instructions = """
 12. 所有 mutation 拒絕跨站 Browser request；圖片 body、GPU queue、run
     數與記憶體圖片總量都有 hard cap。
 13. 本階段不引入資料庫或舊 Storyboard 引擎；角色／場景資產持久化在
-    Git-ignored `.runtime/asset-library/`，分鏡 run／candidate 狀態仍只由
+    Git-ignored `.local-data/asset-library/`，分鏡 run／candidate 狀態仍只由
     單一 Gateway process 暫存，重啟後不保留工作進度。
 14. 不得聲稱已在目標 RTX 5070 Ti 完成端到端重放，除非有本次實跑記錄、
     版本摘要與結果證據。來源機黃金圖不等於新機驗證。

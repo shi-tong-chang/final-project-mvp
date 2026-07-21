@@ -272,7 +272,7 @@ def _isolated_workflow_settings(
     return WorkflowSettings(
         repo_root=tmp_path,
         workflow_root=workflow_root,
-        asset_library_root=tmp_path / "asset-library",
+        asset_library_root=tmp_path / ".local-data" / "asset-library",
         poll_interval_seconds=0.1,
         **changes,
     )

@@ -32,7 +32,7 @@ descriptor。
 正式素材保存在 repository 內、Git-ignored 的：
 
 ```text
-.runtime/asset-library/
+.local-data/asset-library/
 ├── characters/char_<32 hex>/
 │   ├── metadata.json
 │   ├── front.png
@@ -54,6 +54,11 @@ descriptor。
 - 圖庫跨 Gateway 重啟保留；分鏡 run、候選與 4K job 仍是 process-local，
   重啟後不恢復。
 - Git clone 不會包含使用者素材；新 clone 從空圖庫開始。
+- 素材庫與 `.runtime/` ownership state 分離；先啟動 Gateway 預覽不會讓
+  後續 runtime install 因缺少 ownership marker 而 fail closed。
+- `STORYBOARD_WORKFLOW_ASSET_LIBRARY_ROOT` 即使由環境覆寫，也只能解析到
+  repository 的 `.local-data/` 子樹；不能改指 `.runtime`、`.git`、`.venv`
+  或 tracked source 目錄。
 
 角色／場景 Agent 尚未接線，因此網頁的「確認生成」目前仍只確認設定。
 未來 Agent controller 完成輸出後，必須呼叫 repository 提供的 trusted

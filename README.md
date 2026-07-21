@@ -269,7 +269,7 @@ Browser；若 WSL 無法代開，請手動開啟 <http://127.0.0.1:8010>：
 未選定、尚未完成、舊分頁持有的過期 candidate ID 或落選候選，都不能
 啟動 4K。4K 固定是 16:9、3840×2160；非 16:9 來源會置中裁切。分鏡任務
 與候選由單一 Gateway process 暫存，Gateway 重啟後不保留；已登錄的角色
-與場景則保存在 `.runtime/asset-library/`，重啟後仍會出現在圖庫。
+與場景則保存在 `.local-data/asset-library/`，重啟後仍會出現在圖庫。
 
 「生成角色」與「生成場景」目前是展示／預留入口；對應
 `.codex/agents/character_generator.toml` 與
@@ -307,7 +307,9 @@ Browser；若 WSL 無法代開，請手動開啟 <http://127.0.0.1:8010>：
 
 成功時 CLI 會輸出 JSON。重新整理網站後，角色或場景會出現在各自圖庫及
 分鏡素材選擇區。原始來源路徑不會寫進 metadata；正式副本保存在
-`.runtime/asset-library/`，整個目錄已被 Git 排除。
+`.local-data/asset-library/`，整個目錄已被 Git 排除。這個位置刻意與
+`.runtime/` 分開，因此即使先啟動純前端預覽，也不會干擾後續 runtime
+ownership 檢查或「安裝環境」。
 
 ## 狀態、logs 與常見排錯
 
@@ -328,7 +330,8 @@ python3 scripts/fpmvp_runtime.py status
   metadata 或 model lock 改變後 quick preflight 會要求重新驗證。
 - `.runtime/models/`：managed models；下載中檔案以同目錄 `.part` 保存。
 - `.runtime/comfy-data/`：受控的 input、output、temp 與 user data。
-- `.runtime/asset-library/`：已登錄的角色四視圖與場景定稿；不會進 Git。
+- `.local-data/asset-library/`：已登錄的角色四視圖與場景定稿；不會進
+  Git，且不屬於 runtime ownership state。
 
 常見情況：
 
@@ -352,14 +355,22 @@ python3 scripts/fpmvp_runtime.py status
   給 ComfyUI，但仍占磁碟，確認不需保留證據後可由人類清理。
 - **ComfyUI 未就緒：**首頁與角色風格 catalog 仍可使用；GPU workflow
   顯示安全錯誤，不會把 raw payload 或本機路徑送到 Browser。
+- **從短暫使用過的 `.runtime/asset-library` 升級：**先停止 Gateway 並把
+  舊素材完整備份，再將素材庫放到 `.local-data/asset-library/`；若 `.env`
+  有 `STORYBOARD_WORKFLOW_ASSET_LIBRARY_ROOT`，也要改成新位置。不要整個
+  刪除 `.runtime/`，其中可能已有受 ownership 保護的模型與執行狀態。
 - **準備搬動 repository：**務必在舊位置先執行 `stop`，再搬動整個
   repository。舊 `.venv` 與 `.runtime` 含絕對路徑，新位置的 controller
-  會 fail closed，不會自動改寫；把兩個 Git-ignored 目錄移到 repository
-  外備份，再於新位置重跑 `install`。備份中的 `models/` 可用
+  會 fail closed，不會自動改寫；`.local-data/` 則是不可重建的角色與場景
+  素材。先把三個 Git-ignored 目錄移到 repository 外備份，再於新位置重跑
+  `install`，最後把 `.local-data/` 放回新 repository。備份中的 `models/` 可用
   `--models-mode external --model-root <path>` 重新完整驗證並重用。若在
   process 尚運行時就已搬移，先把 repository 還原到原路徑執行 `stop`，
   或由人類另外確認真正 owner；不要期待新路徑的 stale identity 能停止
   它，也不要跨位置直接沿用舊 venv 或 config。
+- **清理 ignored 檔案：**`git clean -fdX` 會連 `.local-data/` 的正式角色與
+  場景一起刪除；執行任何 ignored-file 清理前，先把素材庫備份到 repository
+  外。
 
 ## 安全邊界
 

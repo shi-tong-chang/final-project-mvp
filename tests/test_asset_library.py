@@ -29,7 +29,7 @@ def _settings(tmp_path: Path) -> WorkflowSettings:
     return WorkflowSettings(
         repo_root=tmp_path,
         workflow_root=tmp_path / "workflows",
-        asset_library_root=tmp_path / "asset-library",
+        asset_library_root=tmp_path / ".local-data" / "asset-library",
     )
 
 
@@ -45,6 +45,38 @@ def _character_images() -> dict[CharacterView, bytes]:
         ),
         CharacterView.BACK: _image_bytes(51, 64, (120, 80, 40)),
     }
+
+
+def test_default_asset_library_does_not_claim_runtime_state(tmp_path: Path) -> None:
+    settings = WorkflowSettings(repo_root=tmp_path)
+
+    async def exercise() -> None:
+        service = AssetLibraryService(settings)
+        await service.start()
+
+    asyncio.run(exercise())
+
+    assert settings.asset_library_root == (tmp_path / ".local-data" / "asset-library")
+    assert settings.asset_library_root.is_dir()
+    assert not (tmp_path / ".runtime").exists()
+
+
+def test_asset_library_root_cannot_override_runtime_ownership(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(ValueError, match="asset_library_root"):
+        WorkflowSettings(
+            repo_root=tmp_path,
+            asset_library_root=tmp_path / ".runtime" / "asset-library",
+        )
+
+    configured = WorkflowSettings(
+        repo_root=tmp_path,
+        asset_library_root=tmp_path / ".local-data" / "alternate-library",
+    )
+    assert configured.asset_library_root == (
+        tmp_path / ".local-data" / "alternate-library"
+    )
 
 
 def test_asset_library_registers_lists_reads_and_persists_complete_assets(

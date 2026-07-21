@@ -20,7 +20,8 @@
 - 角色頁提供本機角色圖庫；每筆角色模板包含前、左、右、後四視圖。
 - 場景頁提供本機場景圖庫；每筆場景模板包含一張定稿圖。
 - 圖庫資產以 opaque ID 與安全同源 URL 提供，持久化在 Git-ignored
-  `.runtime/asset-library/`；空狀態不得冒充正式生成結果。
+  `.local-data/asset-library/`；空狀態不得冒充正式生成結果，且不得先行
+  建立或污染 `.runtime/` ownership state。
 - 場景與分鏡版面預覽。
 - Desktop／mobile responsive 與鍵盤 tabs。
 - 從圖庫選擇一個或兩個角色與一個場景；圖庫尚空時保留一張場景加一張
@@ -121,8 +122,9 @@ Schema version：`storyboard-studio.catalog.v2`。
   且仍等於 Browser 回傳的 server-issued 預期候選 ID。
 - 固定 workflow 以 SHA-256 fail closed，Git checkout 強制保留 LF，
   避免 graph 漂移或 Windows CRLF 改變固定資產。
-- Managed ComfyUI、models、logs、素材庫與生成工作資料只寫入 Git-ignored
-  `.runtime/`；adopted ComfyUI 保持唯讀。
+- Managed ComfyUI、models、logs 與生成工作資料只寫入 Git-ignored
+  `.runtime/`；素材庫獨立寫入 Git-ignored `.local-data/`，adopted ComfyUI
+  保持唯讀。
 
 ## 7. 驗收
 

@@ -477,7 +477,7 @@ def _run_gateway_server(
     workflow_settings = WorkflowSettings(
         repo_root=temporary_repo_root,
         workflow_root=temporary_workflow_root,
-        asset_library_root=temporary_repo_root / "assets",
+        asset_library_root=(temporary_repo_root / ".local-data" / "asset-library"),
     )
     app = create_gateway_app(
         settings,

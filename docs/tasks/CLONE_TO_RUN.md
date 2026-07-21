@@ -41,7 +41,9 @@ workflow；瀏覽器不能覆寫版本、模型、路徑或啟動參數。
 
 `scripts/fpmvp_runtime.py` 本身只依賴 Ubuntu 24.04 可用的 Python
 standard library，以便先完成 bootstrap。下載 Python 或建立環境時，cache 與
-runtime 資產必須留在 Git-ignored `.runtime/` 或 Gateway 專用 `.venv/`。
+installer／runtime 資產必須留在 Git-ignored `.runtime/` 或 Gateway 專用
+`.venv/`。不可重建的角色／場景素材另存於 Git-ignored `.local-data/`，
+不屬於 runtime ownership state。
 
 ## 2. 所有權與選擇策略
 
@@ -125,6 +127,7 @@ source custom nodes 則全部停用後只 allowlist strict-pinned GGUF。若
   state/models.receipt.json
   config.json
   extra_model_paths.yaml
+.local-data/asset-library/    # 角色四視圖與場景定稿；不可重建的使用者素材
 ```
 
 Managed 不得修改使用者在 `$HOME/ai/ComfyUI` 或其他位置的安裝，不呼叫
@@ -371,7 +374,7 @@ fixture／API／Browser 測試已覆蓋，不表示已在目標 GPU 實際推論
 | ComfyUI crash／GPU OOM | 該任務安全標記 failed，Gateway 保持可用；確認 log 摘要後 stop/start |
 | Gateway 重啟 | 接受目前 MVP 的暫存 run／選片遺失；不得據此自動重送 4K |
 | stale state | status 唯讀回報 `PROCESS_NOT_OWNED`；若固定 port 確認為 free，下一次 start 只在新 process identity 建立後覆寫該 record，不依 stale PID 終止任何 process |
-| repository 搬移 | 搬移前在舊路徑先 stop；新路徑的 controller 因 ownership marker／config 路徑不符而 fail closed。把舊 `.venv`／`.runtime` 移到 repository 外備份，再重跑 install；備份模型可經 explicit external 全 SHA 重用。若 process 運行中就已搬移，先還原原路徑再 stop，或由人類另外確認 owner；新路徑不以 stale identity 停止它 |
+| repository 搬移 | 搬移前在舊路徑先 stop；新路徑的 controller 因 ownership marker／config 路徑不符而 fail closed。把舊 `.venv`／`.runtime` 與不可重建的 `.local-data` 移到 repository 外備份，再重跑 install、放回 `.local-data`；備份模型可經 explicit external 全 SHA 重用。若 process 運行中就已搬移，先還原原路徑再 stop，或由人類另外確認 owner；新路徑不以 stale identity 停止它 |
 
 任何復原路徑都不得修改 adopted 安裝、全域清 ComfyUI queue、刪除使用者
 既有 output，或把服務改綁公開介面。

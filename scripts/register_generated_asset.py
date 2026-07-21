@@ -25,7 +25,11 @@ def _parser() -> argparse.ArgumentParser:
         )
     )
     parser.add_argument("--repo-root", type=Path, default=REPO_ROOT)
-    parser.add_argument("--asset-library-root", type=Path)
+    parser.add_argument(
+        "--asset-library-root",
+        type=Path,
+        help="自訂 repository .local-data/ 內的素材庫位置。",
+    )
     subparsers = parser.add_subparsers(dest="asset_kind", required=True)
 
     character = subparsers.add_parser("character", help="登錄角色四視圖")

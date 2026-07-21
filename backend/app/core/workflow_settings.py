@@ -26,7 +26,7 @@ class WorkflowSettings(BaseSettings):
 
     repo_root: Path = Field(default=DEFAULT_GATEWAY_REPO_ROOT)
     workflow_root: Path = Field(default=Path("docs/workflows"))
-    asset_library_root: Path = Field(default=Path(".runtime/asset-library"))
+    asset_library_root: Path = Field(default=Path(".local-data/asset-library"))
     comfyui_base_url: str = Field(default="http://127.0.0.1:8188", max_length=256)
     connect_timeout_seconds: float = Field(default=5.0, gt=0, le=30)
     request_timeout_seconds: float = Field(default=30.0, gt=0, le=120)
@@ -79,17 +79,25 @@ class WorkflowSettings(BaseSettings):
 
     @model_validator(mode="after")
     def normalize_paths(self) -> WorkflowSettings:
-        """固定 workflow 與本機素材只能位於 repository 內。"""
+        """固定 workflow 位於 repo；素材只能位於專用 local-data 樹。"""
 
         self.repo_root = self.repo_root.expanduser().resolve()
-        for field_name in ("workflow_root", "asset_library_root"):
-            configured_root = getattr(self, field_name).expanduser()
-            if not configured_root.is_absolute():
-                configured_root = self.repo_root / configured_root
-            normalized_root = configured_root.resolve()
-            if not normalized_root.is_relative_to(self.repo_root):
-                raise ValueError(f"{field_name} 必須位於專案根目錄內")
-            setattr(self, field_name, normalized_root)
+        workflow_root = self.workflow_root.expanduser()
+        if not workflow_root.is_absolute():
+            workflow_root = self.repo_root / workflow_root
+        self.workflow_root = workflow_root.resolve()
+        if not self.workflow_root.is_relative_to(self.repo_root):
+            raise ValueError("workflow_root 必須位於專案根目錄內")
+
+        local_data_root = (self.repo_root / ".local-data").resolve()
+        if not local_data_root.is_relative_to(self.repo_root):
+            raise ValueError(".local-data 不可指向專案外部")
+        asset_library_root = self.asset_library_root.expanduser()
+        if not asset_library_root.is_absolute():
+            asset_library_root = self.repo_root / asset_library_root
+        self.asset_library_root = asset_library_root.resolve()
+        if not self.asset_library_root.is_relative_to(local_data_root):
+            raise ValueError("asset_library_root 必須位於專案 .local-data 內")
         return self
 
     @property
